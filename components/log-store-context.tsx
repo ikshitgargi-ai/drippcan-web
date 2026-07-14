@@ -334,6 +334,97 @@ export function LogContactsCard({
 }
 
 /** Convenience wrapper for /log: past conversations + contacts together. */
+/* ===== Account header — who/where this account is, at a glance ===== */
+function AccountHeader({ storeNumber }: { storeNumber: number }) {
+  const full = useQuery({
+    queryKey: ['store-full', storeNumber],
+    queryFn: () => api.storeFull(storeNumber),
+    retry: 1,
+  });
+  const s = full.data?.store;
+  if (!s) return null;
+  const phone = s.manager_phone || s.phone || '';
+  return (
+    <div className="m-card">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold">
+            #{s.store_number}
+            <span className="text-sm font-normal text-muted ml-1.5">{s.account}</span>
+          </div>
+          <div className="text-xs text-muted mt-0.5">
+            {[s.address, s.city, s.postal].filter(Boolean).join(', ')}
+          </div>
+          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            {s.priority && <span className="change-chip change-BASELINE">Priority {s.priority}</span>}
+            {s.rep && <span className="change-chip change-STATUS_FLIP">Rep: {s.rep}</span>}
+          </div>
+        </div>
+        {phone && (
+          <a
+            href={`tel:${phone.replace(/[^0-9+]/g, '')}`}
+            className="shrink-0 change-chip bg-[var(--color-accent)] text-[#2a1f0f] font-semibold min-h-9 px-3 flex items-center"
+          >
+            Call
+          </a>
+        )}
+      </div>
+      {s.store_notes && (
+        <div className="mt-2 pt-2 border-t border-[var(--color-card-border)] text-xs text-muted whitespace-pre-wrap">
+          {s.store_notes}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ===== Inventory status — SOD vs lcbo.com vs rep-observed, per SKU ===== */
+function InventoryStatus({ storeNumber }: { storeNumber: number }) {
+  const reconcile = useQuery({
+    queryKey: ['reconcile', 7],
+    queryFn: () => api.reconcile(7),
+    retry: 1,
+  });
+  const rows = (reconcile.data?.rows ?? []).filter((r) => r.store_number === storeNumber);
+  return (
+    <div className="m-card">
+      <div className="text-sm font-semibold mb-2">Inventory status</div>
+      {!reconcile.data && !reconcile.isError && <div className="skeleton h-12" />}
+      {reconcile.isError && (
+        <div className="text-xs text-muted">Inventory unavailable right now.</div>
+      )}
+      {reconcile.data && rows.length === 0 && (
+        <div className="text-xs text-muted">
+          Neither product is at this store yet — distribution gap, pitch a first order.
+        </div>
+      )}
+      {rows.map((r) => (
+        <div
+          key={r.sku}
+          className="flex items-center justify-between gap-2 py-1.5 border-b border-[var(--color-card-border)] last:border-0 text-xs"
+        >
+          <div className="flex-1 min-w-0">
+            <span className="font-medium">{r.product_name}</span>
+            {r.flag && r.flag !== 'MATCH' && (
+              <span className="change-chip change-STATUS_FLIP ml-1.5 text-[10px]">
+                {r.flag.replace(/_/g, ' ').toLowerCase()}
+              </span>
+            )}
+          </div>
+          <div className="shrink-0 tabular-nums text-right">
+            <span className="text-muted">SOD </span>
+            <span className="font-semibold">{r.sod_on_hand ?? '—'}</span>
+            <span className="text-muted ml-2">lcbo.com </span>
+            <span className="font-semibold">{r.live_qty ?? '—'}</span>
+            <span className="text-muted ml-2">rep saw </span>
+            <span className="font-semibold">{r.rep_units ?? '—'}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function StoreLogContext({
   storeNumber,
   rep,
@@ -343,10 +434,15 @@ export function StoreLogContext({
   rep: string | null;
   registerSave?: (fn: () => Promise<void>) => void;
 }) {
+  // The full ACCOUNT view a rep scrolls when they pick a store: who the
+  // account is → the people (editable) → what stock says → what was said
+  // before. The new log entry (today's convo) is the form below this block.
   return (
     <div className="space-y-3">
-      <PastConversations storeNumber={storeNumber} />
+      <AccountHeader storeNumber={storeNumber} />
       <LogContactsCard storeNumber={storeNumber} rep={rep} registerSave={registerSave} />
+      <InventoryStatus storeNumber={storeNumber} />
+      <PastConversations storeNumber={storeNumber} />
     </div>
   );
 }
