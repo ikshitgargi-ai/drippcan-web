@@ -30,6 +30,7 @@ import {
   Scale,
   Crown,
   ListOrdered,
+  ClipboardList,
   LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -54,6 +55,7 @@ const NAV: NavItem[] = [
   { href: '/territory', label: 'Territory Book', icon: MapPin },
   { href: '/top100', label: 'Top-100 Board', icon: ListOrdered },
   { href: '/reconcile', label: 'Reconcile (3-way)', icon: Scale },
+  { href: '/listings', label: 'Listings (canonical)', icon: ClipboardList },
   { href: '/changes', label: 'Changes (X-day)', icon: TrendingUp },
   { href: '/finder', label: 'Store Finder', icon: MapPin },
   { href: '/today', label: "Today's Plan", icon: Calendar },
@@ -76,6 +78,7 @@ const NAV: NavItem[] = [
 const OWNER_NAV: NavItem[] = [
   { href: '/owner', label: 'Owner Dashboard', icon: Crown },
   { href: '/top100', label: 'Top-100', icon: ListOrdered },
+  { href: '/listings', label: 'Listings', icon: ClipboardList },
   { href: '/changes', label: 'Changes', icon: TrendingUp },
   { href: '/reconcile', label: 'Reconcile', icon: Scale },
 ];

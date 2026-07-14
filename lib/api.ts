@@ -679,6 +679,33 @@ export const api = {
       headers: viewHeaders(opts),
     }),
 
+  // ===== Canonical Listing Ledger (SOD-independent source of truth) =====
+  // These read the immutable listing_ledger / materialized store_listings on
+  // the backend. They survive a total SOD loss, so this is the authoritative
+  // "what is listed / what was added" surface. Owner-allowlisted: /api/listings,
+  // /api/listings/added and /api/export/listings.xlsx are owner-safe (sanitized
+  // server-side); source-health stays internal. If the backend hasn't shipped
+  // these yet the calls 404 → the /listings page shows a graceful empty state.
+  listings: (opts?: ViewOpts) =>
+    request<ListingsPayload>('/api/listings', { headers: viewHeaders(opts) }),
+  // `since` is a YYYY-MM-DD floor; the page derives it from a 7/30/60/90-day
+  // preset. Backend defaults to 30 days when omitted.
+  listingsAdded: (since?: string, opts?: ViewOpts) => {
+    const qs = new URLSearchParams();
+    if (since) qs.set('since', since);
+    const s = qs.toString();
+    return request<ListingsAddedPayload>(`/api/listings/added${s ? `?${s}` : ''}`, {
+      headers: viewHeaders(opts),
+    });
+  },
+  // Internal early-warning: per-source last-seen + 7-day volume, so we notice
+  // the moment SOD or the live scrape goes quiet. Not owner-allowlisted.
+  listingsSourceHealth: () =>
+    request<ListingsSourceHealthPayload>('/api/listings/source-health'),
+  // <a href> download of the canonical listings table (owner rides ?view=owner).
+  exportListingsXlsxUrl: (opts?: ViewOpts) =>
+    viewQuery(`${API_BASE}/api/export/listings.xlsx`, opts),
+
   // ===== Top-100 priority board =====
   // Owner view is gap-only server-side (skus_carried <= 1). The internal
   // board can request the same filter with gap_only for parity.
@@ -2872,6 +2899,110 @@ export interface ConversionPayload {
   /** Already a percentage (0-100), rounded to 1 decimal on the backend. */
   conversion_rate: number;
   per_store: ConversionPerStoreRow[];
+}
+
+// ===== Canonical Listing Ledger =====
+// The ledger (listing_ledger) is the immutable, source-independent record; the
+// materialized store_listings fold is what these read endpoints serve. Types
+// mirror the spec shapes; the page guards every field so a partial backend
+// payload (or a not-yet-deployed endpoint) degrades gracefully.
+
+/** Which feed confirmed a listing. */
+export type ListingSource = 'sod' | 'live' | 'rep' | 'manual';
+export type ListingStatus = 'LISTED' | 'DELISTED';
+
+/** One row of GET /api/listings — a store×SKU current state, folded from the
+ *  ledger. `sources_seen` is a CSV of every source that ever confirmed it. */
+export interface ListingRow {
+  sku: string;
+  brand: string;
+  product_name: string;
+  store_number: number;
+  account: string | null;
+  city: string | null;
+  status: ListingStatus | string;
+  first_listed_date: string | null;
+  last_confirmed_date: string | null;
+  /** CSV like "sod,live,rep" — split for badges. */
+  sources_seen: string;
+  days_since_confirmed: number | null;
+}
+
+export interface ListingsBySku {
+  sku: string;
+  brand?: string;
+  product_name?: string;
+  listed: number;
+  delisted?: number;
+}
+
+export interface ListingsSummary {
+  listed: number;
+  delisted: number;
+  /** Per-SKU listed counts. Typed as an array; guard with Array.isArray. */
+  by_sku: ListingsBySku[];
+  /** Per-source confirmed-listing counts (sod/live/rep/manual → n). */
+  by_source: Record<string, number>;
+  /** Earliest first_listed_date in the ledger. */
+  first_ever: string | null;
+  /** Most recent LISTED observed_date. */
+  latest_add: string | null;
+}
+
+/** GET /api/listings → canonical current listings + summary. */
+export interface ListingsPayload {
+  rows: ListingRow[];
+  summary: ListingsSummary;
+  freshness?: Freshness;
+  as_of?: string;
+}
+
+/** One LISTED event in the added-window, straight from the ledger. */
+export interface ListingAddedRow {
+  sku: string;
+  brand: string;
+  product_name: string;
+  store_number: number;
+  account: string | null;
+  city: string | null;
+  source: ListingSource | string;
+  /** When the world changed, per the source. */
+  observed_date: string;
+  /** When we wrote it (append time). */
+  recorded_at?: string | null;
+  /** rep_converted / organic / baseline — reuses the LAUNCH_DATE logic. */
+  attribution: ConversionTag | null;
+}
+
+/** GET /api/listings/added?since=YYYY-MM-DD → LISTED events, newest first. */
+export interface ListingsAddedPayload {
+  since: string;
+  count: number;
+  rows: ListingAddedRow[];
+  summary?: {
+    total?: number;
+    rep_converted?: number;
+    organic?: number;
+    baseline?: number;
+    by_source?: Record<string, number>;
+  };
+}
+
+/** One source's health line for GET /api/listings/source-health. */
+export interface SourceHealthRow {
+  source: ListingSource | string;
+  /** Latest observed_date this source wrote. Null = never seen. */
+  last_observed_date: string | null;
+  rows_last_7d: number;
+  /** Backend may flag staleness directly; else the strip derives it. */
+  stale?: boolean;
+  days_since?: number | null;
+}
+
+/** GET /api/listings/source-health → per-source last-seen + 7-day volume. */
+export interface ListingsSourceHealthPayload {
+  as_of?: string;
+  sources: SourceHealthRow[];
 }
 
 /** Per-SKU cell on a top-100 row: SOD + live + conversion side by side. */
