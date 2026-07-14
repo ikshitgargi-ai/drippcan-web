@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { CommandBar } from './command-bar';
 import { LiveTicker } from './live-ticker';
 import {
@@ -30,12 +31,21 @@ import {
   Scale,
   Crown,
   ListOrdered,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ownerLogout, useOwnerMode } from '@/lib/owner-mode';
+
+type NavItem = {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  anchor?: string;
+};
 
 // PRIMARY rep nav (5 mobile bottom-tab items). Anchor scroll within the home page
 // so reps never feel like they're "leaving the app." Plus ONE manager link.
-const NAV = [
+const NAV: NavItem[] = [
   { href: '/', label: 'Home', icon: LayoutDashboard, anchor: 'top' },
   { href: '/#skus', label: 'SKUs', icon: Tag, anchor: 'skus' },
   { href: '/#intel', label: 'Intel', icon: Activity, anchor: 'intel' },
@@ -60,8 +70,20 @@ const NAV = [
   { href: '/ask', label: 'Ask AI', icon: Sparkles },
 ];
 
+// OWNER SESSION LOCKDOWN — while ownerMode is set (owner passcode unlocked)
+// the nav collapses to these four surfaces plus Logout, and every other
+// route redirects to /owner. The backend allowlist is the real lock; this
+// keeps the owner's phone from ever even asking for internal pages.
+const OWNER_NAV: NavItem[] = [
+  { href: '/owner', label: 'Owner Dashboard', icon: Crown },
+  { href: '/top100', label: 'Top-100', icon: ListOrdered },
+  { href: '/changes', label: 'Changes', icon: TrendingUp },
+  { href: '/reconcile', label: 'Reconcile', icon: Scale },
+];
+const OWNER_ALLOWED_ROUTES = OWNER_NAV.map((n) => n.href);
+
 // Secondary — only visible if explicitly opened (drawer "More" section)
-const NAV_SECONDARY = [
+const NAV_SECONDARY: NavItem[] = [
   { href: '/owner', label: 'Owner View', icon: Crown },
   { href: '/exports', label: 'Exports & Rep Audit', icon: Download },
   { href: '/oos', label: 'OOS Risk', icon: AlertTriangle },
@@ -79,6 +101,25 @@ const NAV_SECONDARY = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const qc = useQueryClient();
+  const ownerMode = useOwnerMode();
+
+  const nav = ownerMode ? OWNER_NAV : NAV;
+  const navSecondary = ownerMode ? [] : NAV_SECONDARY;
+  const ownerBlocked = ownerMode && !OWNER_ALLOWED_ROUTES.includes(pathname);
+
+  // Owner lockdown: any route outside the owner surfaces bounces to /owner.
+  useEffect(() => {
+    if (ownerBlocked) router.replace('/owner');
+  }, [ownerBlocked, router]);
+
+  function handleOwnerLogout() {
+    ownerLogout();
+    // Drop the owner session's cache so nothing bleeds across views.
+    qc.clear();
+    router.replace('/owner');
+  }
 
   // Close mobile nav on route change
   useEffect(() => setOpen(false), [pathname]);
@@ -94,8 +135,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] bg-brand-grad">
-      {/* Always-on global search (Cmd+K) — renders the trigger inline + the modal portal-style */}
-      <CommandBar />
+      {/* Always-on global search (Cmd+K) — internal only; the owner session
+          has no business searching stores or reps */}
+      {!ownerMode && <CommandBar />}
 
       {/* Mobile top bar */}
       <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 h-14 border-b border-[var(--color-card-border)] bg-[rgba(10,12,16,0.8)] backdrop-blur safe-top">
@@ -133,15 +175,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </button>
             </div>
             <div className="p-3 space-y-1">
-              {NAV.map((item) => (
+              {nav.map((item) => (
                 <NavLink key={item.href} item={item} active={pathname === item.href} />
               ))}
-              <div className="mt-4 mb-2 px-3 text-[10px] uppercase tracking-wider text-[var(--color-muted)] font-semibold">
-                More
-              </div>
-              {NAV_SECONDARY.map((item) => (
-                <NavLink key={item.href} item={item} active={pathname === item.href} />
-              ))}
+              {navSecondary.length > 0 && (
+                <>
+                  <div className="mt-4 mb-2 px-3 text-[10px] uppercase tracking-wider text-[var(--color-muted)] font-semibold">
+                    More
+                  </div>
+                  {navSecondary.map((item) => (
+                    <NavLink key={item.href} item={item} active={pathname === item.href} />
+                  ))}
+                </>
+              )}
+              {ownerMode && <OwnerLogoutButton onClick={handleOwnerLogout} />}
             </div>
           </nav>
         </div>
@@ -159,15 +206,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <NavLink key={item.href} item={item} active={pathname === item.href} />
           ))}
-          <div className="mt-5 mb-2 px-3 text-[10px] uppercase tracking-wider text-[var(--color-muted)] font-semibold">
-            More
-          </div>
-          {NAV_SECONDARY.map((item) => (
-            <NavLink key={item.href} item={item} active={pathname === item.href} />
-          ))}
+          {navSecondary.length > 0 && (
+            <>
+              <div className="mt-5 mb-2 px-3 text-[10px] uppercase tracking-wider text-[var(--color-muted)] font-semibold">
+                More
+              </div>
+              {navSecondary.map((item) => (
+                <NavLink key={item.href} item={item} active={pathname === item.href} />
+              ))}
+            </>
+          )}
+          {ownerMode && <OwnerLogoutButton onClick={handleOwnerLogout} />}
         </nav>
         <div className="p-4 text-[10px] text-[var(--color-muted)] border-t border-[var(--color-card-border)]">
           Dripp Tracker
@@ -177,7 +229,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom tab bar — always visible. Anchor tabs scroll instead of navigating. */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-[rgba(10,12,16,0.96)] backdrop-blur border-t border-[var(--color-card-border)] safe-bottom">
         <div className="flex items-stretch justify-around">
-          {NAV.slice(0, 5).map((item) => {
+          {nav.slice(0, 5).map((item) => {
             const Icon = item.icon;
             const isAnchor = !!item.anchor;
             const onHome = pathname === '/';
@@ -211,6 +263,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+          {ownerMode && (
+            <button
+              onClick={handleOwnerLogout}
+              className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-[var(--color-muted)]"
+            >
+              <LogOut size={20} />
+              <span className="text-[10px] font-medium">Logout</span>
+            </button>
+          )}
         </div>
       </nav>
 
@@ -218,21 +279,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="lg:pl-64 min-h-[100dvh]">
         {/* Desktop top bar: search + ticker. Mobile already has its own header above */}
         <div className="hidden lg:flex sticky top-0 z-20 items-center gap-3 px-6 h-14 bg-[rgba(10,12,16,0.85)] backdrop-blur border-b border-[var(--color-card-border)]">
-          <div className="flex-1">
-            <CommandBar />
-          </div>
+          <div className="flex-1">{!ownerMode && <CommandBar />}</div>
           <div className="flex items-center gap-2 text-xs text-[var(--color-muted)]">
             <span className="pulse-dot" />
             <span className="font-semibold uppercase tracking-wider">Live · 24/7</span>
           </div>
         </div>
-        {/* Live ticker sits right under top bar on all device sizes >=sm */}
-        <LiveTicker />
+        {/* Live ticker sits right under top bar on all device sizes >=sm.
+            Its feed endpoint is internal, so the owner session skips it. */}
+        {!ownerMode && <LiveTicker />}
         <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 pb-24 lg:pb-6 max-w-[1400px] mx-auto">
-          {children}
+          {ownerBlocked ? (
+            <div className="py-16 text-center text-sm text-[var(--color-muted)]">
+              Owner view — taking you to the Owner Dashboard…
+            </div>
+          ) : (
+            children
+          )}
         </div>
       </main>
     </div>
+  );
+}
+
+function OwnerLogoutButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 h-11 px-3 rounded-lg text-sm text-[var(--color-foreground)] hover:bg-[#1a1f29] transition-colors"
+    >
+      <LogOut size={18} className="text-[var(--color-muted)]" />
+      Logout
+    </button>
   );
 }
 
@@ -240,7 +318,7 @@ function NavLink({
   item,
   active,
 }: {
-  item: (typeof NAV)[number];
+  item: NavItem;
   active: boolean;
 }) {
   const Icon = item.icon;

@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Lock, Unlock } from 'lucide-react';
 import { api } from '@/lib/api';
+import { OWNER_UNLOCK_KEY, ownerLogout, setOwnerMode, useOwnerMode } from '@/lib/owner-mode';
 
-const STORAGE_KEY = 'dripp.ownerUnlocked';
+const STORAGE_KEY = OWNER_UNLOCK_KEY;
 
 /**
  * Owner-mode gate for /owner.
@@ -14,12 +16,16 @@ const STORAGE_KEY = 'dripp.ownerUnlocked';
  * OWNER_PASSCODE env via POST /api/owner/check — the code never ships in
  * frontend JS. This is a convenience gate for the brand owner; the real
  * protection is server-side anonymization on every X-View: owner response.
+ *
+ * Unlocking also flips the ownerMode session flag: the whole app collapses
+ * to the owner surfaces and every fetch carries X-View: owner until logout.
  */
 export function OwnerGate({ children }: { children: React.ReactNode }) {
   const [unlocked, setUnlocked] = useState<boolean | null>(null);
   const [input, setInput] = useState('');
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState('');
+  const qc = useQueryClient();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -29,6 +35,24 @@ export function OwnerGate({ children }: { children: React.ReactNode }) {
       setUnlocked(false);
     }
   }, []);
+
+  // Fail closed: an unlocked owner gate ALWAYS means an owner-mode session
+  // (covers devices that unlocked before the lockdown shipped).
+  useEffect(() => {
+    if (unlocked) setOwnerMode(true);
+  }, [unlocked]);
+
+  // If the session flag is dropped elsewhere (nav Logout, another tab),
+  // re-read the unlock key so the gate re-locks in place.
+  const ownerMode = useOwnerMode();
+  useEffect(() => {
+    if (ownerMode || !unlocked) return;
+    try {
+      setUnlocked(window.localStorage.getItem(STORAGE_KEY) === '1');
+    } catch {
+      setUnlocked(false);
+    }
+  }, [ownerMode, unlocked]);
 
   async function submit() {
     if (!input || checking) return;
@@ -40,6 +64,10 @@ export function OwnerGate({ children }: { children: React.ReactNode }) {
         try {
           window.localStorage.setItem(STORAGE_KEY, '1');
         } catch {}
+        setOwnerMode(true);
+        // Drop anything an internal session may have cached — the owner
+        // session refetches everything with X-View: owner.
+        qc.clear();
         setUnlocked(true);
         setInput('');
       } else {
@@ -60,9 +88,8 @@ export function OwnerGate({ children }: { children: React.ReactNode }) {
   }
 
   function lock() {
-    try {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } catch {}
+    ownerLogout();
+    qc.clear();
     setUnlocked(false);
     setInput('');
   }
@@ -126,7 +153,7 @@ export function OwnerGate({ children }: { children: React.ReactNode }) {
           className="text-[10px] text-muted hover:text-[var(--color-foreground)] flex items-center gap-1"
         >
           <Unlock size={10} />
-          Lock owner view
+          Log out of owner view
         </button>
       </div>
     </div>

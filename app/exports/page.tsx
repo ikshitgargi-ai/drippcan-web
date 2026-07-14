@@ -13,7 +13,7 @@ import {
   Sparkles,
   CalendarDays,
 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, API_BASE } from '@/lib/api';
 import { REP_ROSTER } from '@/lib/reps';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,9 @@ function ExportsInner() {
   const [includeHistory, setIncludeHistory] = useState(false);
   const [behaviorWindow, setBehaviorWindow] = useState(30);
 
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+  // Same base as every api.ts fetcher (NEXT_PUBLIC_API_BASE) — download
+  // links must point at the same backend the app is talking to.
+  const apiBase = API_BASE;
 
   const exportUrl =
     apiBase +
@@ -365,7 +367,8 @@ function RepActivityReportCard() {
   const [end, setEnd] = useState<string>('');
   const useCustom = !!(start || end);
 
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+  // Same base as every api.ts fetcher (NEXT_PUBLIC_API_BASE).
+  const apiBase = API_BASE;
 
   const { data, isFetching, refetch } = useQuery({
     queryKey: ['rep-activity-report', rep, period, start, end, useCustom],

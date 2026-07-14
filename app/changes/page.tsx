@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, TrendingDown, PackagePlus, Download } from 'lucide-react';
 import { api, type ChangeRow } from '@/lib/api';
 import { TRACKED_SKUS } from '@/lib/skus';
+import { useOwnerMode } from '@/lib/owner-mode';
 import { TierChip, AttributionChip } from '@/components/dripp-bits';
 import { formatNumber, formatDate } from '@/lib/utils';
 
@@ -20,9 +21,12 @@ const DAY_PRESETS = [7, 14, 30, 60] as const;
 export default function ChangesPage() {
   const [days, setDays] = useState<number>(7);
   const [sku, setSku] = useState<string>('');
+  // Owner session: request() stamps X-View on the fetches, but the
+  // <a href> download can't carry headers — ride ?view=owner instead.
+  const ownerMode = useOwnerMode();
 
   const changes = useQuery({
-    queryKey: ['changes', days, sku],
+    queryKey: ['changes', days, sku, ownerMode],
     queryFn: () => api.changes(days, sku || undefined),
     retry: 1,
   });
@@ -48,7 +52,7 @@ export default function ChangesPage() {
           </p>
         </div>
         <a
-          href={api.exportChangesXlsxUrl(days)}
+          href={api.exportChangesXlsxUrl(days, ownerMode ? { owner: true } : undefined)}
           className="shrink-0 inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[#1a1f29]"
         >
           <Download size={14} />

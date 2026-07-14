@@ -444,14 +444,17 @@ function Stat({ label, value }: { label: string; value: number | string }) {
   );
 }
 
-/* ===== Downloads — anonymized xlsx exports ===== */
+/* ===== Downloads — anonymized xlsx exports =====
+ * Only the four owner-allowlisted exports appear here. Field visits
+ * (visits.xlsx) is INTERNAL: it reads the activities table directly, so the
+ * server cannot anonymize it — the backend's fail-closed allowlist 403s it
+ * in owner view on purpose. Do not add it back. */
 function DownloadsSection() {
   const links = [
     { label: 'Top-100 board', href: api.exportTop100XlsxUrl(OWNER) },
     { label: 'Territory book', href: api.exportTerritoryXlsxUrl(OWNER) },
     { label: 'Changes (30 days)', href: api.exportChangesXlsxUrl(30, OWNER) },
     { label: 'Inventory reconcile', href: api.exportReconcileXlsxUrl(OWNER) },
-    { label: 'Field visits', href: api.exportVisitsXlsxUrl(OWNER) },
   ];
   return (
     <section className="space-y-2">

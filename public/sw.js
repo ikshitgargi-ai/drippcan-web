@@ -3,7 +3,8 @@
 //
 // On upgrade: bump VERSION to invalidate ALL old caches and force fresh HTML.
 
-const VERSION = 'dripp-tracker-v1';
+// v2: owner-view requests bypass the cache entirely (cross-view isolation).
+const VERSION = 'dripp-tracker-v2';
 
 self.addEventListener('install', (e) => {
   // Take over immediately — don't wait for old tabs to close
@@ -29,6 +30,12 @@ self.addEventListener('fetch', (e) => {
 
   // Never intercept backend mutations or refresh endpoints
   if (url.pathname.startsWith('/api/sod/sync') || url.pathname.includes('/refresh-')) return;
+
+  // Owner-view requests are NETWORK-ONLY. The Cache API matches by URL and
+  // ignores request headers, so a cached internal (non-anonymized) response
+  // could otherwise be served to an X-View: owner request at the same URL —
+  // and an owner response must never be cached for internal use either.
+  if (req.headers.get('X-View') === 'owner' || url.searchParams.get('view') === 'owner') return;
 
   // Same-origin API GETs only — never intercept cross-origin (e.g. Render
   // backend at drippcan-tracker.onrender.com). Cross-origin fetches must hit

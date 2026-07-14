@@ -12,6 +12,8 @@
  * Use <FreshnessBanner> to surface stale data to the user.
  */
 
+import { isOwnerMode } from './owner-mode';
+
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ?? 'https://drippcan-tracker.onrender.com';
 
@@ -38,6 +40,16 @@ function viewQuery(url: string, opts?: ViewOpts): string {
   return url + (url.includes('?') ? '&' : '?') + 'view=owner';
 }
 
+/** Render's free tier answers 502/503/504 while it is busy or waking up.
+ *  Retry those ONCE after 2.5s — idempotent GET/HEAD only, never a POST. */
+const RETRYABLE_STATUS = [502, 503, 504];
+const RETRY_DELAY_MS = 2500;
+
+function isIdempotentGet(init?: RequestInit): boolean {
+  const method = (init?.method ?? 'GET').toUpperCase();
+  return method === 'GET' || method === 'HEAD';
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // For FormData (multipart) bodies, let the browser set Content-Type
   // automatically — including the boundary parameter. Manually setting
@@ -46,6 +58,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     typeof FormData !== 'undefined' && init?.body instanceof FormData;
   const authHeaders: Record<string, string> = {};
   if (API_KEY) authHeaders['X-API-Key'] = API_KEY;
+  // Owner session lockdown: while the device is in owner mode EVERY call
+  // carries X-View: owner so the backend serves only the limited, anonymized
+  // view (fail-closed allowlist server-side). Explicit per-call headers set
+  // the same value, so merge order does not matter.
+  if (isOwnerMode()) authHeaders['X-View'] = 'owner';
   const headers = isFormData
     ? { ...authHeaders, ...(init?.headers ?? {}) }
     : {
@@ -53,10 +70,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         ...authHeaders,
         ...(init?.headers ?? {}),
       };
-  const r = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers,
-  });
+  const doFetch = () =>
+    fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers,
+    });
+  let r = await doFetch();
+  if (RETRYABLE_STATUS.includes(r.status) && isIdempotentGet(init)) {
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+    r = await doFetch();
+  }
   if (!r.ok) {
     let detail = '';
     try {
@@ -646,10 +669,17 @@ export const api = {
   top100: (opts?: ViewOpts) =>
     request<Top100Payload>('/api/top100', { headers: viewHeaders(opts) }),
   top100Priority: (body: { store_number: number; rank: number }, opts?: ViewOpts) =>
-    request<{ status: string }>('/api/top100/priority', {
+    request<Top100PriorityResponse>('/api/top100/priority', {
       method: 'POST',
       body: JSON.stringify(body),
       headers: viewHeaders(opts),
+    }),
+  // Recompute DEFAULT ranks (gap-first + CORE geography); manual moves are
+  // preserved. INTERNAL only — deliberately absent from the owner allowlist.
+  top100Rebalance: () =>
+    request<Top100RebalancePayload>('/api/top100/rebalance', {
+      method: 'POST',
+      body: JSON.stringify({}),
     }),
   top100Status: (
     body: { store_number: number; owner_status: OwnerStatus; note?: string },
@@ -2846,6 +2876,17 @@ export interface Top100Row {
     rep?: string | null;
   } | null;
   conversion?: ConversionTag | null;
+  /** How many of the 2 SKUs the store carries (SOD on-hand or live qty > 0).
+   *  Sent by the ranking-v2 backend; derived client-side when absent. */
+  skus_carried?: number;
+  /** Per-brand carried units + which source was fresher (ranking v2). */
+  carried_detail?: {
+    phoenix?: number | null;
+    dayaa?: number | null;
+    source?: 'sod' | 'live' | null;
+  };
+  /** 'core' (Toronto/York corridor) vs 'outer' (Mississauga, Brampton, rest). */
+  geo_tier?: string | null;
 }
 
 /** GET /api/top100 → { count, rows, owner_statuses } (see api_top100). */
@@ -2853,6 +2894,29 @@ export interface Top100Payload {
   count: number;
   rows: Top100Row[];
   owner_statuses: string[];
+}
+
+/** POST /api/top100/priority — ranking v2 returns the full re-sequenced
+ *  order of affected rows so the UI can reconcile optimistic moves. */
+export interface Top100PriorityResponse {
+  status: string;
+  store_number: number;
+  old_rank: number | null;
+  rank: number | null;
+  changed_by?: string;
+  resequenced?: Array<{
+    store_number: number;
+    priority_rank?: number | null;
+    rank?: number | null;
+  }>;
+}
+
+/** POST /api/top100/rebalance → { rebalanced, preserved, group_counts }. */
+export interface Top100RebalancePayload {
+  status?: string;
+  rebalanced: number;
+  preserved: number;
+  group_counts?: Record<string, number>;
 }
 
 /** GET /api/top100/funnel → { board_size, funnel, order } (see api_top100_funnel). */

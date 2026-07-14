@@ -1,16 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Phone, MapPin, User, Loader2, CheckCircle2, Search } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, type ResolveStoreMatch } from '@/lib/api';
 
 /**
- * Smart store autocomplete: rep can type EITHER a store number ("217") OR any
- * fragment of the store name / address / city / postal code. Picks the matching
- * store and autopopulates name + address + phone (tap-to-call) + manager.
+ * Smart store autocomplete: rep types EITHER a store number ("217") OR any
+ * fragment of the address / account name / city / postal code.
  *
- * Backed by /api/crm/store-search (returns up to 10 matches).
+ * Backed by /api/crm/resolve-store — ONE endpoint that ranks matches with a
+ * confidence score (exact store number 100, postal 90, address 70, ...).
+ * The debounced dropdown lists matches confidence-first; tapping one fills
+ * the form. Contact details (phone, manager) are enriched afterwards from
+ * /api/crm/store/N/full, but the pick NEVER depends on that second call —
+ * a busy free-tier server can no longer produce a false "not in CRM".
  */
 export function StoreLookup({
   value,
@@ -33,58 +37,79 @@ export function StoreLookup({
   placeholder?: string;
 }) {
   const [debounced, setDebounced] = useState('');
-  const [picked, setPicked] = useState<number | null>(null);
+  const [picked, setPicked] = useState<ResolveStoreMatch | null>(null);
+
+  // Keep the latest onResolved without re-running effects when the parent
+  // passes a fresh inline arrow on every render.
+  const onResolvedRef = useRef(onResolved);
+  useEffect(() => {
+    onResolvedRef.current = onResolved;
+  });
 
   useEffect(() => {
-    const id = setTimeout(() => setDebounced(value.trim()), 220);
+    const id = setTimeout(() => setDebounced(value.trim()), 250);
     return () => clearTimeout(id);
   }, [value]);
 
-  const enabled = debounced.length >= 2;
+  const searching = debounced.length >= 2 && !picked;
 
-  // 1) Live search across number/name/address (typeahead)
-  const search = useQuery({
-    queryKey: ['store-search', debounced],
-    queryFn: () => api.storeSearch(debounced),
-    enabled,
+  const resolve = useQuery({
+    queryKey: ['resolve-store', debounced],
+    queryFn: () => api.resolveStore(debounced, 8),
+    enabled: searching,
+    // request() already retries once after 2.5s on a 502/503/504 GET.
     retry: false,
+    staleTime: 30_000,
   });
 
-  const matches = useMemo(() => search.data?.matches ?? [], [search.data]);
+  const matches = useMemo(() => {
+    const list = resolve.data?.matches ?? [];
+    // Backend returns ranked already — keep a stable confidence-first order.
+    return [...list].sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0));
+  }, [resolve.data]);
 
-  // 2) Once exactly one match (or the user picked one) — fetch full profile to
-  //    surface manager phone / asst manager etc that the search row may not include.
-  const exactNumber = /^\d+$/.test(debounced) ? Number(debounced) : null;
-  const autoPick =
-    picked ??
-    (exactNumber ?? (matches.length === 1 ? matches[0].store_number : null));
+  // Auto-confirm the single exact store-number hit (reps mostly type the #).
+  useEffect(() => {
+    if (!searching) return;
+    if (matches.length === 1 && (matches[0].confidence ?? 0) >= 100) {
+      setPicked(matches[0]);
+    }
+  }, [searching, matches]);
 
-  const lookup = useQuery({
-    queryKey: ['store-full', autoPick],
-    queryFn: () => api.storeFull(autoPick!),
-    enabled: !!autoPick,
+  // Optional enrichment: phone + manager from the full store card. The pick
+  // stands on the resolve-store match even if this call fails.
+  const detail = useQuery({
+    queryKey: ['store-full', picked?.store_number],
+    queryFn: () => api.storeFull(picked!.store_number),
+    enabled: !!picked,
     retry: false,
   });
 
   useEffect(() => {
-    if (!enabled) {
-      onResolved?.(null);
+    if (!picked) {
+      if (!searching) onResolvedRef.current?.(null);
       return;
     }
-    const s = lookup.data?.store;
-    if (s) {
-      onResolved?.({
-        store_number: s.store_number,
-        account: s.account ?? '',
-        address: s.address ?? '',
-        city: s.city ?? '',
-        phone: s.manager_phone || s.phone || '',
-        manager_name: s.manager_name ?? '',
-      });
-    } else if (lookup.error) {
-      onResolved?.(null);
-    }
-  }, [enabled, lookup.data, lookup.error, onResolved]);
+    const s = detail.data?.store;
+    onResolvedRef.current?.({
+      store_number: picked.store_number,
+      account: s?.account || picked.account || '',
+      address: s?.address || picked.address || '',
+      city: s?.city || picked.city || '',
+      phone: s ? s.manager_phone || s.phone || '' : '',
+      manager_name: s?.manager_name ?? '',
+    });
+  }, [picked, detail.data, searching]);
+
+  function pick(m: ResolveStoreMatch) {
+    setPicked(m);
+    onChange(String(m.store_number));
+  }
+
+  const phone = detail.data?.store
+    ? detail.data.store.manager_phone || detail.data.store.phone || ''
+    : '';
+  const managerName = detail.data?.store?.manager_name ?? '';
 
   return (
     <div>
@@ -106,107 +131,95 @@ export function StoreLookup({
           autoComplete="off"
         />
       </div>
-      {enabled && matches.length > 1 && !autoPick && (
-        <div className="mt-2 rounded-lg border border-[var(--color-card-border)] bg-[var(--color-background)] divide-y divide-[var(--color-card-border)] overflow-hidden">
-          {matches.map((m) => {
-            const last = m.last_activity_at ? new Date(m.last_activity_at) : null;
-            const lastDays =
-              last && !isNaN(last.getTime())
-                ? Math.floor((Date.now() - last.getTime()) / (1000 * 60 * 60 * 24))
-                : null;
-            return (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => {
-                  setPicked(m.store_number);
-                  onChange(String(m.store_number));
-                }}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--color-card)]"
-              >
-                <div className="font-semibold text-sm flex items-center gap-2">
-                  #{m.store_number} · {m.account || '—'}
-                  {m.rep && (
-                    <span className="text-[10px] text-muted font-normal">{m.rep}</span>
-                  )}
-                </div>
-                <div className="text-muted">
-                  {m.address}
-                  {m.city ? `, ${m.city}` : ''}
-                  {m.postal ? ` ${m.postal}` : ''}
-                </div>
-                {last && (
-                  <div className="text-[10px] text-muted mt-0.5">
-                    Last: {m.last_activity_type ?? 'visit'}
-                    {m.last_activity_rep ? ` by ${m.last_activity_rep}` : ''}
-                    {lastDays != null
-                      ? ` · ${lastDays === 0 ? 'today' : `${lastDays}d ago`}`
-                      : ''}
-                    {m.last_activity_notes
-                      ? ` — ${m.last_activity_notes.slice(0, 80)}${m.last_activity_notes.length > 80 ? '…' : ''}`
-                      : ''}
-                  </div>
-                )}
-              </button>
-            );
-          })}
+
+      {searching && resolve.isLoading && (
+        <div className="mt-2 flex items-center gap-2 text-xs text-muted">
+          <Loader2 size={12} className="animate-spin" /> Searching stores…
         </div>
       )}
-      {autoPick && (
+
+      {/* Confidence-ordered match dropdown — tap to fill the form */}
+      {searching && matches.length > 0 && (
+        <div className="mt-2 rounded-lg border border-[var(--color-card-border)] bg-[var(--color-background)] divide-y divide-[var(--color-card-border)] overflow-hidden">
+          {matches.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => pick(m)}
+              className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--color-card)]"
+            >
+              <div className="font-semibold text-sm flex items-center gap-2">
+                #{m.store_number} · {m.account || '—'}
+              </div>
+              <div className="text-muted">
+                {m.address}
+                {m.city ? `, ${m.city}` : ''}
+                {m.postal ? ` ${m.postal}` : ''}
+              </div>
+              {m.match_reason && (
+                <div className="text-[10px] text-muted mt-0.5">{m.match_reason}</div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Confirmed pick — rendered from the resolve match itself */}
+      {picked && (
         <div className="mt-2 p-2.5 rounded-lg bg-[var(--color-background)] border border-[var(--color-card-border)] text-xs">
-          {lookup.isLoading && (
-            <div className="flex items-center gap-2 text-muted">
-              <Loader2 size={12} className="animate-spin" /> Looking up…
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 size={12} className="text-[var(--color-success)]" />
+              <span className="font-semibold text-sm">
+                #{picked.store_number} · {picked.account || '—'}
+              </span>
             </div>
-          )}
-          {lookup.error && (
-            <div className="text-[var(--color-warning)]">
-              Store #{autoPick} not found in CRM.
-            </div>
-          )}
-          {lookup.data?.store && (
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 size={12} className="text-[var(--color-success)]" />
-                <span className="font-semibold text-sm">
-                  #{lookup.data.store.store_number} · {lookup.data.store.account || '—'}
+            {(picked.address || picked.city) && (
+              <div className="flex items-start gap-1.5 text-muted">
+                <MapPin size={11} className="shrink-0 mt-0.5" />
+                <span>
+                  {picked.address}
+                  {picked.city ? `, ${picked.city}` : ''} {picked.postal ?? ''}
                 </span>
               </div>
-              {lookup.data.store.address && (
-                <div className="flex items-start gap-1.5 text-muted">
-                  <MapPin size={11} className="shrink-0 mt-0.5" />
-                  <span>
-                    {lookup.data.store.address}, {lookup.data.store.city ?? ''}{' '}
-                    {lookup.data.store.postal ?? ''}
-                  </span>
-                </div>
-              )}
-              {(lookup.data.store.manager_phone || lookup.data.store.phone) && (
-                <div className="flex items-center gap-1.5 text-muted">
-                  <Phone size={11} />
-                  <a
-                    href={`tel:${(
-                      lookup.data.store.manager_phone || lookup.data.store.phone
-                    ).replace(/[^0-9+]/g, '')}`}
-                    className="text-[var(--color-accent)]"
-                  >
-                    {lookup.data.store.manager_phone || lookup.data.store.phone}
-                  </a>
-                </div>
-              )}
-              {lookup.data.store.manager_name && (
-                <div className="flex items-center gap-1.5 text-muted">
-                  <User size={11} />
-                  <span>Manager: {lookup.data.store.manager_name}</span>
-                </div>
-              )}
-            </div>
-          )}
+            )}
+            {detail.isLoading && (
+              <div className="flex items-center gap-1.5 text-muted">
+                <Loader2 size={11} className="animate-spin" /> Loading contact details…
+              </div>
+            )}
+            {phone && (
+              <div className="flex items-center gap-1.5 text-muted">
+                <Phone size={11} />
+                <a
+                  href={`tel:${phone.replace(/[^0-9+]/g, '')}`}
+                  className="text-[var(--color-accent)]"
+                >
+                  {phone}
+                </a>
+              </div>
+            )}
+            {managerName && (
+              <div className="flex items-center gap-1.5 text-muted">
+                <User size={11} />
+                <span>Manager: {managerName}</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
-      {enabled && !search.isLoading && matches.length === 0 && (
+
+      {searching && resolve.isError && (
         <div className="mt-2 text-xs text-muted">
-          No stores matching &ldquo;{debounced}&rdquo;.
+          Store lookup is waking the server up — give it a few seconds and
+          type again.
+        </div>
+      )}
+
+      {searching && resolve.data && !resolve.isLoading && matches.length === 0 && (
+        <div className="mt-2 text-xs text-muted">
+          No LCBO store matches &ldquo;{debounced}&rdquo;. Try the store
+          number, street, city or postal code.
         </div>
       )}
     </div>

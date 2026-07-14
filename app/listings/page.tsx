@@ -19,7 +19,9 @@ type ChangeFilter = 'all' | 'listings' | 'delistings' | 'flips';
 export default function ListingsPage() {
   const [days, setDays] = useState(14);
   const [filter, setFilter] = useState<ChangeFilter>('all');
-  const [trackedOnly, setTrackedOnly] = useState(false);
+  // Default tracked-only: the SOD consignment file carries ~50 junk SKUs
+  // that would otherwise flood the feed. Toggle shows the full catalog.
+  const [trackedOnly, setTrackedOnly] = useState(true);
 
   const digest = useQuery({
     queryKey: ['listing-digest', days, trackedOnly],

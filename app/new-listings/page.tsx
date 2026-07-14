@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { TrendingUp, Calendar, RefreshCw, Eye, AlertTriangle, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { api } from '@/lib/api';
+import { downloadCSV } from '@/lib/export';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatNumber } from '@/lib/utils';
@@ -229,22 +230,34 @@ export default function NewListingsPage() {
               <RefreshCw size={14} className={audit.isFetching ? 'animate-spin' : ''} />
               {audit.isFetching ? 'Computing…' : 'Re-run'}
             </Button>
-            <a
-              href={
-                (process.env.NEXT_PUBLIC_API_BASE_URL ?? '') +
-                `/api/admin/new-listings-by-range?format=csv` +
-                `&start=${start}&end=${end}` +
-                (skuFilter ? `&sku=${skuFilter}` : '') +
-                `&strict_mode=${strictMode ? '1' : '0'}` +
-                (freshLcbo ? '&fresh_lcbo=1' : '')
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-accent)] text-[#2a1f0f] text-sm font-semibold"
+            {/* Client-side CSV of the evidence rows already on screen —
+                the backend endpoint is JSON-only (no format=csv mode), and
+                this keeps the download identical to what the table shows. */}
+            <button
+              onClick={() => {
+                const rows = (audit.data?.per_sku ?? []).flatMap((s) =>
+                  (s.new_stores ?? []).map((n) => ({
+                    sku: s.sku,
+                    brand: s.brand,
+                    product_name: s.product_name,
+                    store_number: n.store_number,
+                    discovered_via: n.discovered_via,
+                    confirmed_new: n.confirmed_new,
+                    has_change_event: n.has_change_event,
+                    last_listed_before_window: n.last_listed_before_window ?? '',
+                    lcbo_confirmed: n.lcbo_confirmed,
+                    rep_confirmed: n.rep_confirmed,
+                    evidence: n.evidence,
+                  })),
+                );
+                downloadCSV(rows, `new-listings-${start}-to-${end}`);
+              }}
+              disabled={!audit.data || audit.isFetching}
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-accent)] text-[#2a1f0f] text-sm font-semibold disabled:opacity-50"
               title="Each row carries verification evidence — confirmed_new, has_change_event, last_listed_before_window, evidence text"
             >
               <Download size={14} /> Download CSV
-            </a>
+            </button>
           </div>
         </CardContent>
       </Card>

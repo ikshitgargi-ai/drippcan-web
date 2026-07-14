@@ -7,6 +7,7 @@ import { Scale, RefreshCw, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, type ReconcileFlag, type ReconcileRow } from '@/lib/api';
 import { TRACKED_SKUS } from '@/lib/skus';
+import { useOwnerMode } from '@/lib/owner-mode';
 import { FlagChip, FLAG_META } from '@/components/dripp-bits';
 import { formatNumber, formatDate, formatDateTime, relativeTime } from '@/lib/utils';
 
@@ -32,9 +33,12 @@ export default function ReconcilePage() {
   const [flagFilter, setFlagFilter] = useState<ReconcileFlag | 'all'>('all');
   const [skuFilter, setSkuFilter] = useState<string>('');
   const qc = useQueryClient();
+  // Owner session: hide the internal live-scrape trigger and ride
+  // ?view=owner on the header-less <a href> download.
+  const ownerMode = useOwnerMode();
 
   const reconcile = useQuery({
-    queryKey: ['reconcile', days],
+    queryKey: ['reconcile', days, ownerMode],
     queryFn: () => api.reconcile(days),
     retry: 1,
   });
@@ -107,16 +111,18 @@ export default function ReconcilePage() {
           </p>
         </div>
         <div className="shrink-0 flex flex-col gap-1.5 items-end">
-          <button
-            onClick={() => refresh.mutate()}
-            disabled={refresh.isPending}
-            className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-[var(--color-accent)] text-[#2a1f0f] text-xs font-semibold disabled:opacity-50"
-          >
-            <RefreshCw size={14} className={refresh.isPending ? 'animate-spin' : ''} />
-            {refresh.isPending ? 'Scraping…' : 'Refresh live'}
-          </button>
+          {!ownerMode && (
+            <button
+              onClick={() => refresh.mutate()}
+              disabled={refresh.isPending}
+              className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-[var(--color-accent)] text-[#2a1f0f] text-xs font-semibold disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={refresh.isPending ? 'animate-spin' : ''} />
+              {refresh.isPending ? 'Scraping…' : 'Refresh live'}
+            </button>
+          )}
           <a
-            href={api.exportReconcileXlsxUrl()}
+            href={api.exportReconcileXlsxUrl(ownerMode ? { owner: true } : undefined)}
             className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[#1a1f29]"
           >
             <Download size={14} />

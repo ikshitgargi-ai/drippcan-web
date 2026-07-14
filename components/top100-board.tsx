@@ -1,35 +1,84 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowUp, ArrowDown, Download, MessageSquare } from 'lucide-react';
+import { ArrowUp, ArrowDown, Download, MessageSquare, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { api, OWNER_STATUSES, type OwnerStatus, type Top100Row } from '@/lib/api';
+import {
+  api,
+  OWNER_STATUSES,
+  type OwnerStatus,
+  type Top100Payload,
+  type Top100PriorityResponse,
+  type Top100Row,
+} from '@/lib/api';
 import { TRACKED_SKUS } from '@/lib/skus';
+import { useOwnerMode } from '@/lib/owner-mode';
 import { TierChip, AttributionChip, OWNER_STATUS_META } from '@/components/dripp-bits';
 import { formatNumber, formatDate, relativeTime } from '@/lib/utils';
 
 /**
  * Top-100 priority board — shared between /top100 (internal) and /owner
- * (owner view). The `owner` prop rides on every request as X-View: owner so
- * the backend strips rep identity; it also audits writes as changed_by
- * 'owner' instead of the rep name.
+ * (owner view). The `owner` prop (or the device-wide ownerMode session)
+ * rides on every request as X-View: owner so the backend strips rep
+ * identity; it also audits writes as changed_by 'owner'.
  *
- * Both roles may reorder priority and set owner_status — the two writes the
- * owner is allowed. Every write is audited in territory_status_history.
+ * Ranking v2 UX:
+ *  - rows grouped by SKUs carried (none / one / both) with counts — the
+ *    zero-SKU stores are the money, they come first;
+ *  - CORE/OUTER geography chip per store;
+ *  - arrow moves apply optimistically and reconcile against the backend's
+ *    re-sequenced response (ranks stay unique 1..N server-side);
+ *  - internal-only Rebalance recomputes default ranks, preserving manual
+ *    moves (it is deliberately NOT in the owner allowlist).
  */
+
+// Geography tier fallback (mirrors the backend CORE list) — used only when
+// a row predates the ranking-v2 backend and has no geo_tier.
+const CORE_CITIES = new Set([
+  'north york', 'toronto', 'etobicoke', 'scarborough', 'east york', 'york',
+  'vaughan', 'maple', 'woodbridge', 'concord', 'thornhill', 'markham',
+  'unionville', 'richmond hill', 'aurora', 'newmarket', 'king city',
+  'kleinburg', 'oak ridges', 'stouffville',
+]);
+
+function carriedCount(row: Top100Row): 0 | 1 | 2 {
+  if (row.skus_carried != null) {
+    return Math.max(0, Math.min(2, row.skus_carried)) as 0 | 1 | 2;
+  }
+  // Fallback: latest SOD on-hand > 0 OR latest live qty > 0 counts as carrying.
+  const n = Object.values(row.skus ?? {}).filter(
+    (c) => (c.on_hand ?? 0) > 0 || (c.live_qty ?? 0) > 0,
+  ).length;
+  return Math.min(2, n) as 0 | 1 | 2;
+}
+
+function geoTier(row: Top100Row): 'core' | 'outer' {
+  if (row.geo_tier) return row.geo_tier.toLowerCase() === 'core' ? 'core' : 'outer';
+  return CORE_CITIES.has((row.city ?? '').trim().toLowerCase()) ? 'core' : 'outer';
+}
+
+const GROUP_META: Record<0 | 1 | 2, { label: string; hint: string }> = {
+  0: { label: 'Carrying neither SKU', hint: 'the wins to go get' },
+  1: { label: 'Carrying one SKU', hint: 'sell in the second' },
+  2: { label: 'Carrying both SKUs', hint: 'defend and restock' },
+};
+
 export function Top100Board({ owner = false }: { owner?: boolean }) {
   const qc = useQueryClient();
-  const viewOpts = owner ? { owner: true } : undefined;
+  const ownerMode = useOwnerMode();
+  const effOwner = owner || ownerMode;
+  const viewOpts = effOwner ? { owner: true } : undefined;
+  const boardKey = ['top100', effOwner] as const;
 
   const board = useQuery({
-    queryKey: ['top100', owner],
+    queryKey: boardKey,
     queryFn: () => api.top100(viewOpts),
     retry: 1,
   });
   const funnel = useQuery({
-    queryKey: ['top100-funnel', owner],
+    queryKey: ['top100-funnel', effOwner],
     queryFn: () => api.top100Funnel(viewOpts),
     retry: 1,
   });
@@ -40,13 +89,61 @@ export function Top100Board({ owner = false }: { owner?: boolean }) {
   };
 
   const setPriority = useMutation({
-    mutationFn: (moves: Array<{ store_number: number; rank: number }>) =>
-      Promise.all(moves.map((m) => api.top100Priority(m, viewOpts))),
-    onSuccess: () => {
-      toast.success('Priority updated (audited)');
-      invalidate();
+    // Sequential on purpose: each write re-sequences ranks server-side, and
+    // two concurrent re-sequencing transactions would race each other.
+    mutationFn: async (moves: Array<{ store_number: number; rank: number }>) => {
+      const out: Top100PriorityResponse[] = [];
+      for (const m of moves) out.push(await api.top100Priority(m, viewOpts));
+      return out;
     },
-    onError: (err: unknown) => toast.error((err as Error).message),
+    // Optimistic: swap the two rows in the cache immediately.
+    onMutate: async (moves) => {
+      await qc.cancelQueries({ queryKey: boardKey });
+      const prev = qc.getQueryData<Top100Payload>(boardKey);
+      if (prev && moves.length === 2) {
+        const [m1, m2] = moves;
+        const i = prev.rows.findIndex((r) => r.store_number === m1.store_number);
+        const j = prev.rows.findIndex((r) => r.store_number === m2.store_number);
+        if (i >= 0 && j >= 0) {
+          const rows = [...prev.rows];
+          const a = { ...rows[i], priority_rank: m1.rank };
+          const b = { ...rows[j], priority_rank: m2.rank };
+          rows[i] = b;
+          rows[j] = a;
+          qc.setQueryData<Top100Payload>(boardKey, { ...prev, rows });
+        }
+      }
+      return { prev };
+    },
+    onError: (err: unknown, _moves, ctx) => {
+      if (ctx?.prev) qc.setQueryData(boardKey, ctx.prev);
+      toast.error((err as Error).message);
+    },
+    // Reconcile against the re-sequenced order the backend returns, so the
+    // board matches server truth even before the refetch lands.
+    onSuccess: (results) => {
+      const reseq = new Map<number, number | null>();
+      for (const res of results) {
+        for (const r of res.resequenced ?? []) {
+          reseq.set(r.store_number, r.priority_rank ?? r.rank ?? null);
+        }
+      }
+      if (reseq.size > 0) {
+        const prev = qc.getQueryData<Top100Payload>(boardKey);
+        if (prev) {
+          qc.setQueryData<Top100Payload>(boardKey, {
+            ...prev,
+            rows: prev.rows.map((r) =>
+              reseq.has(r.store_number)
+                ? { ...r, priority_rank: reseq.get(r.store_number) ?? null }
+                : r,
+            ),
+          });
+        }
+      }
+      toast.success('Priority updated (audited)');
+    },
+    onSettled: invalidate,
   });
 
   const setStatus = useMutation({
@@ -59,40 +156,82 @@ export function Top100Board({ owner = false }: { owner?: boolean }) {
     onError: (err: unknown) => toast.error((err as Error).message),
   });
 
-  const rows = board.data?.rows ?? [];
+  // INTERNAL ONLY — recompute default ranks (gap-first, CORE cities first).
+  const rebalance = useMutation({
+    mutationFn: api.top100Rebalance,
+    onSuccess: (r) => {
+      toast.success(
+        `Rebalanced ${formatNumber(r.rebalanced)} ranks · ${formatNumber(r.preserved)} manual ranks preserved`,
+      );
+      invalidate();
+    },
+    onError: (err: unknown) => toast.error((err as Error).message),
+  });
 
-  function move(idx: number, dir: -1 | 1) {
-    const other = idx + dir;
-    if (other < 0 || other >= rows.length) return;
-    const a = rows[idx];
-    const b = rows[other];
+  const rows = useMemo(() => board.data?.rows ?? [], [board.data]);
+
+  // Group None / One / Both, keeping the backend's rank order inside each.
+  const sections = useMemo(() => {
+    const buckets: Record<0 | 1 | 2, Top100Row[]> = { 0: [], 1: [], 2: [] };
+    rows.forEach((r) => buckets[carriedCount(r)].push(r));
+    return ([0, 1, 2] as const).map((key) => ({ key, rows: buckets[key] }));
+  }, [rows]);
+  const displayOrder = useMemo(() => sections.flatMap((s) => s.rows), [sections]);
+
+  function move(displayIdx: number, dir: -1 | 1) {
+    const other = displayIdx + dir;
+    if (other < 0 || other >= displayOrder.length) return;
+    const a = displayOrder[displayIdx];
+    const b = displayOrder[other];
     // Swap the two ranks; fall back to visible position when a rank is null.
     const rankA = b.priority_rank ?? other + 1;
-    const rankB = a.priority_rank ?? idx + 1;
+    const rankB = a.priority_rank ?? displayIdx + 1;
     setPriority.mutate([
       { store_number: a.store_number, rank: rankA },
       { store_number: b.store_number, rank: rankB },
     ]);
   }
 
+  const busy = setPriority.isPending || setStatus.isPending;
+
   return (
     <div className="space-y-4">
       {/* Conversion funnel bar — how many of the board reached each stage */}
       <FunnelBar counts={funnel.data?.funnel} total={rows.length || funnel.data?.board_size} />
 
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="text-xs text-muted">
           {rows.length > 0
             ? `${rows.length} stores, ranked. Arrows reorder; every change is audited.`
             : ''}
         </div>
-        <a
-          href={api.exportTop100XlsxUrl(viewOpts)}
-          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[#1a1f29]"
-        >
-          <Download size={14} />
-          Download .xlsx
-        </a>
+        <div className="flex items-center gap-2">
+          {!effOwner && (
+            <button
+              onClick={() => {
+                if (
+                  window.confirm(
+                    'Recompute default ranks? Stores carrying neither SKU in CORE cities move to the top. Manual moves are preserved.',
+                  )
+                ) {
+                  rebalance.mutate();
+                }
+              }}
+              disabled={rebalance.isPending}
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[#1a1f29] disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={rebalance.isPending ? 'animate-spin' : ''} />
+              {rebalance.isPending ? 'Rebalancing…' : 'Rebalance'}
+            </button>
+          )}
+          <a
+            href={api.exportTop100XlsxUrl(viewOpts)}
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[#1a1f29]"
+          >
+            <Download size={14} />
+            Download .xlsx
+          </a>
+        </div>
       </div>
 
       {/* Gate on DATA, not isLoading — a paused/offline query must show
@@ -115,22 +254,45 @@ export function Top100Board({ owner = false }: { owner?: boolean }) {
         </div>
       )}
 
-      <div className="space-y-2">
-        {rows.map((row, idx) => (
-          <BoardRow
-            key={row.store_number}
-            row={row}
-            idx={idx}
-            last={idx === rows.length - 1}
-            owner={owner}
-            busy={setPriority.isPending || setStatus.isPending}
-            onMove={move}
-            onStatus={(status, note) =>
-              setStatus.mutate({ store_number: row.store_number, owner_status: status, note })
-            }
-          />
-        ))}
-      </div>
+      {(() => {
+        let offset = 0;
+        return sections.map((sec) => {
+          if (sec.rows.length === 0) return null;
+          const start = offset;
+          offset += sec.rows.length;
+          return (
+            <div key={sec.key} className="space-y-2">
+              <div className="flex items-baseline justify-between px-1 pt-1">
+                <div className="text-xs font-bold uppercase tracking-wider">
+                  {GROUP_META[sec.key].label}
+                  <span className="ml-2 text-[var(--color-accent)] tabular-nums">
+                    {sec.rows.length}
+                  </span>
+                </div>
+                <div className="text-[10px] text-muted">{GROUP_META[sec.key].hint}</div>
+              </div>
+              {sec.rows.map((row, i) => (
+                <BoardRow
+                  key={row.store_number}
+                  row={row}
+                  idx={start + i}
+                  last={start + i === displayOrder.length - 1}
+                  owner={effOwner}
+                  busy={busy}
+                  onMove={move}
+                  onStatus={(status, note) =>
+                    setStatus.mutate({
+                      store_number: row.store_number,
+                      owner_status: status,
+                      note,
+                    })
+                  }
+                />
+              ))}
+            </div>
+          );
+        });
+      })()}
     </div>
   );
 }
@@ -179,6 +341,27 @@ function FunnelBar({
         ))}
       </div>
     </div>
+  );
+}
+
+function GeoChip({ row }: { row: Top100Row }) {
+  const tier = geoTier(row);
+  return tier === 'core' ? (
+    <span
+      className="change-chip"
+      style={{ background: 'rgba(212,165,116,0.15)', color: '#e5c09a' }}
+      title="Core corridor: Toronto / North York / Vaughan / Markham / Richmond Hill…"
+    >
+      CORE
+    </span>
+  ) : (
+    <span
+      className="change-chip"
+      style={{ background: 'rgba(255,255,255,0.06)', color: '#a7aeb9' }}
+      title="Outer GTA: Mississauga, Brampton and beyond"
+    >
+      OUTER
+    </span>
   );
 }
 
@@ -248,6 +431,7 @@ function BoardRow({
               </Link>
             )}
             <TierChip tier={row.tier} />
+            <GeoChip row={row} />
             {row.class && <span className="change-chip change-BASELINE">{row.class}</span>}
             <AttributionChip tag={row.conversion} />
           </div>
