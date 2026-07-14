@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowUp, ArrowDown, Download, MessageSquare, RefreshCw } from 'lucide-react';
+import { ArrowUp, ArrowDown, Download, Filter, MessageSquare, RefreshCw, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   api,
@@ -70,16 +70,20 @@ export function Top100Board({ owner = false }: { owner?: boolean }) {
   const ownerMode = useOwnerMode();
   const effOwner = owner || ownerMode;
   const viewOpts = effOwner ? { owner: true } : undefined;
-  const boardKey = ['top100', effOwner] as const;
+  // Owner view is gap-only SERVER-side (skus_carried <= 1). The internal
+  // board gets an explicit "Gap only" toggle for parity.
+  const [gapOnly, setGapOnly] = useState(false);
+  const effGapOnly = !effOwner && gapOnly;
+  const boardKey = ['top100', effOwner, effGapOnly] as const;
 
   const board = useQuery({
     queryKey: boardKey,
-    queryFn: () => api.top100(viewOpts),
+    queryFn: () => api.top100(viewOpts, { gap_only: effGapOnly }),
     retry: 1,
   });
   const funnel = useQuery({
-    queryKey: ['top100-funnel', effOwner],
-    queryFn: () => api.top100Funnel(viewOpts),
+    queryKey: ['top100-funnel', effOwner, effGapOnly],
+    queryFn: () => api.top100Funnel(viewOpts, { gap_only: effGapOnly }),
     retry: 1,
   });
 
@@ -156,6 +160,50 @@ export function Top100Board({ owner = false }: { owner?: boolean }) {
     onError: (err: unknown) => toast.error((err as Error).message),
   });
 
+  // Excel round-trip: upload an edited top100.xlsx — rows match by
+  // store_number, changed priority_rank (and valid owner_status) values
+  // apply through the same audited re-sequence path server-side.
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const importXlsx = useMutation({
+    mutationFn: (file: File) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      return api.top100ImportXlsx(fd, viewOpts);
+    },
+    onSuccess: (r) => {
+      const skippedCount = r.skipped?.length ?? 0;
+      toast.success(
+        `Excel applied: ${formatNumber(r.updated)} updated · ${formatNumber(skippedCount)} skipped · ${formatNumber(r.total_ranked)} ranked`,
+      );
+      if (skippedCount > 0) {
+        const preview = r.skipped
+          .slice(0, 5)
+          .map((s) => `#${s.store_number ?? '?'}: ${s.reason}`)
+          .join('\n');
+        toast.warning(
+          `Skipped rows${skippedCount > 5 ? ` (first 5 of ${skippedCount})` : ''}`,
+          { description: preview, duration: 8000 },
+        );
+      }
+      invalidate();
+    },
+    onError: (err: unknown) => toast.error((err as Error).message),
+    onSettled: () => {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    },
+  });
+
+  function onFilePicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      toast.error('File too large — the top-100 export is well under 1MB.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    importXlsx.mutate(file);
+  }
+
   // INTERNAL ONLY — recompute default ranks (gap-first, CORE cities first).
   const rebalance = useMutation({
     mutationFn: api.top100Rebalance,
@@ -205,7 +253,22 @@ export function Top100Board({ owner = false }: { owner?: boolean }) {
             ? `${rows.length} stores, ranked. Arrows reorder; every change is audited.`
             : ''}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {!effOwner && (
+            <button
+              onClick={() => setGapOnly(!gapOnly)}
+              aria-pressed={gapOnly}
+              className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-xs font-semibold border ${
+                gapOnly
+                  ? 'bg-[var(--color-accent)] text-[#2a1f0f] border-[var(--color-accent)]'
+                  : 'bg-[var(--color-card)] border-[var(--color-card-border)]'
+              }`}
+              title="Show only stores carrying 0 or 1 of the 2 SKUs"
+            >
+              <Filter size={13} />
+              Gap only
+            </button>
+          )}
           {!effOwner && (
             <button
               onClick={() => {
@@ -231,6 +294,23 @@ export function Top100Board({ owner = false }: { owner?: boolean }) {
             <Download size={14} />
             Download .xlsx
           </a>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importXlsx.isPending}
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[#1a1f29] disabled:opacity-50"
+            title="Re-import the downloaded top100.xlsx after editing priority_rank (and owner_status)"
+          >
+            <Upload size={14} className={importXlsx.isPending ? 'animate-pulse' : ''} />
+            {importXlsx.isPending ? 'Uploading…' : 'Upload edited Excel'}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            onChange={onFilePicked}
+            className="hidden"
+            aria-label="Upload edited top-100 Excel"
+          />
         </div>
       </div>
 

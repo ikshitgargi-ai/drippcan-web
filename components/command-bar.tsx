@@ -36,7 +36,6 @@ const ROUTES: Result[] = [
   { type: 'route', label: 'Map', href: '/map' },
   { type: 'route', label: 'Reports', href: '/reports' },
   { type: 'route', label: 'Goals', href: '/goals' },
-  { type: 'route', label: 'HORECA', href: '/horeca' },
   { type: 'route', label: 'Reps', href: '/reps' },
   { type: 'route', label: 'Territories', href: '/territories' },
 ];

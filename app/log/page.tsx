@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StoreLookup } from '@/components/store-lookup';
+import { StoreLogContext } from '@/components/log-store-context';
 
 const ACTIVITY_TYPES = [
   { key: 'store_visit', label: 'Store Visit', icon: Eye },
@@ -88,10 +89,28 @@ function LogPageInner() {
   const tracked = useQuery({ queryKey: ['sod-products', true], queryFn: () => api.sodProducts(true) });
   const trackedList = tracked.data?.products ?? tracked.data?.rows ?? [];
 
+  const parsedStore = parseInt(storeNumber, 10);
+  const hasStore = Number.isFinite(parsedStore) && parsedStore > 0;
+
+  // Contacts flush hook — the contacts card registers its "save unsaved
+  // edits" function here so the visit submit saves both in one tap.
+  const contactsSaveRef = useRef<(() => Promise<void>) | null>(null);
+  const registerContactsSave = useCallback((fn: () => Promise<void>) => {
+    contactsSaveRef.current = fn;
+  }, []);
+
   const submit = useMutation({
     mutationFn: async () => {
       if (!activeRep) throw new Error('Pick a rep first');
       if (!storeNumber) throw new Error('Pick a store');
+      // Save any unsaved contact edits together with the visit. A contact
+      // save failure must never block the visit log itself — the contacts
+      // card surfaces its own error toast.
+      try {
+        await contactsSaveRef.current?.();
+      } catch {
+        /* toast raised by the contacts card */
+      }
       // Silent geo — never shown in UI, only attached to the payload.
       const geo = await captureSilentGeo();
       const body: ActivityCreate = {
@@ -181,6 +200,17 @@ function LogPageInner() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Past conversations + store contacts — visible BEFORE the new note
+          is written, so the rep walks in knowing what was said last time. */}
+      {hasStore && (
+        <StoreLogContext
+          key={parsedStore}
+          storeNumber={parsedStore}
+          rep={activeRep}
+          registerSave={registerContactsSave}
+        />
+      )}
 
       <Card>
         <CardHeader>

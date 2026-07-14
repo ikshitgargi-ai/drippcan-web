@@ -12,7 +12,6 @@ import {
   AlertTriangle,
   Target,
   MapPin,
-  UtensilsCrossed,
   Flag,
   Globe2,
   Menu,
@@ -94,7 +93,6 @@ const NAV_SECONDARY: NavItem[] = [
   { href: '/territories', label: 'Territories', icon: Globe2 },
   { href: '/reports', label: 'Reports', icon: Activity },
   { href: '/goals', label: 'Goals', icon: Flag },
-  { href: '/horeca', label: 'HORECA', icon: UtensilsCrossed },
   { href: '/reps', label: 'Reps', icon: ArrowDownUp },
 ];
 

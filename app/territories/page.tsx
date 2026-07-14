@@ -173,10 +173,6 @@ export default function TerritoriesPage() {
                     <span className="text-[var(--color-muted)]">Stores</span>
                     <span className="font-semibold tabular-nums">{formatNumber(t.store_count)}</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-[var(--color-muted)]">HORECA</span>
-                    <span className="font-semibold tabular-nums">{formatNumber(t.horeca_count)}</span>
-                  </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-[var(--color-muted)]">Rep</span>
                     <span className="font-medium">{t.rep_name || '—'}</span>

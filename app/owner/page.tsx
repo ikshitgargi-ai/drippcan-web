@@ -59,11 +59,12 @@ function OwnerDashboard() {
       <NewListingsSection />
       <ConversionSection />
       <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Top-100 priority board</h2>
+        <h2 className="text-lg font-semibold">Top-100 target stores (0–1 products)</h2>
         <p className="text-xs text-muted">
-          Reorder priority with the arrows and set the status per store as
-          listings and orders land. These two actions are yours, and every
-          change is recorded.
+          Your top-100 target stores carrying one or none of your products.
+          Reorder priority with the arrows or by re-uploading the edited
+          Excel, and set the status per store as listings and orders land.
+          Every change is recorded.
         </p>
         <Top100Board owner />
       </section>

@@ -26,6 +26,7 @@ import { TRACKED_SKUS } from '@/lib/skus';
 import { FreshnessBanner } from '@/components/freshness-banner';
 import { Button } from '@/components/ui/button';
 import { StoreLookup } from '@/components/store-lookup';
+import { PastConversations } from '@/components/log-store-context';
 import { formatNumber, relativeTime } from '@/lib/utils';
 
 /**
@@ -549,6 +550,14 @@ function QuickLogSheet({
               <Field label="Store number">
                 <StoreLookup value={storeNumber} onChange={setStoreNumber} />
               </Field>
+              {/* Prior convos at this store — read before writing the new note. */}
+              {Number.isFinite(parseInt(storeNumber, 10)) &&
+                parseInt(storeNumber, 10) > 0 && (
+                  <PastConversations
+                    key={parseInt(storeNumber, 10)}
+                    storeNumber={parseInt(storeNumber, 10)}
+                  />
+                )}
               <Field label="Activity">
                 <select
                   value={activityType}

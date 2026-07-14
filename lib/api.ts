@@ -399,12 +399,14 @@ export const api = {
 
   activities: (params: {
     rep?: string; store_number?: number; horeca_account_id?: number; days?: number;
+    limit?: number;
   } = {}) => {
     const qs = new URLSearchParams();
     if (params.rep) qs.set('rep', params.rep);
     if (params.store_number) qs.set('store_number', String(params.store_number));
     if (params.horeca_account_id) qs.set('horeca_account_id', String(params.horeca_account_id));
     if (params.days != null) qs.set('days', String(params.days));
+    if (params.limit != null) qs.set('limit', String(params.limit));
     const s = qs.toString();
     return request<{ activities: Activity[]; window_days: number; total: number }>(
       `/api/crm/activities${s ? `?${s}` : ''}`,
@@ -452,11 +454,23 @@ export const api = {
     manager_name: string; asst_manager_name: string;
     manager_phone: string; store_email: string; contacts: string; producer: string;
     spirits_ambassador: string; store_notes: string;
+    /** Who is making the edit — recorded as changed_by in the audit trail. */
+    updated_by: string;
   }>) =>
-    request<{ success: boolean }>(`/api/stores/${storeId}`, {
+    request<{ success: boolean; audited_fields?: number }>(`/api/stores/${storeId}`, {
       method: 'PUT',
       body: JSON.stringify(fields),
     }),
+
+  // Contact-field audit trail for the log page (mistake-proofing): for each
+  // of manager_name / asst_manager_name / spirits_ambassador, the current
+  // value plus up to 10 prior values (old -> new, who, when) sourced from
+  // territory_status_history. Nothing is ever hard-deleted — a blanked name
+  // stays one tap away via Restore.
+  storeContactsHistory: (storeNumber: number | string) =>
+    request<StoreContactsHistoryPayload>(
+      `/api/crm/store/${storeNumber}/contacts/history`,
+    ),
 
   // Smart store resolver — rep types address OR store# (or postal/account/city)
   // and we return ranked matches with confidence scores. Used by the
@@ -666,8 +680,12 @@ export const api = {
     }),
 
   // ===== Top-100 priority board =====
-  top100: (opts?: ViewOpts) =>
-    request<Top100Payload>('/api/top100', { headers: viewHeaders(opts) }),
+  // Owner view is gap-only server-side (skus_carried <= 1). The internal
+  // board can request the same filter with gap_only for parity.
+  top100: (opts?: ViewOpts, params: { gap_only?: boolean } = {}) =>
+    request<Top100Payload>(`/api/top100${params.gap_only ? '?gap_only=1' : ''}`, {
+      headers: viewHeaders(opts),
+    }),
   top100Priority: (body: { store_number: number; rank: number }, opts?: ViewOpts) =>
     request<Top100PriorityResponse>('/api/top100/priority', {
       method: 'POST',
@@ -690,8 +708,20 @@ export const api = {
       body: JSON.stringify(body),
       headers: viewHeaders(opts),
     }),
-  top100Funnel: (opts?: ViewOpts) =>
-    request<Top100FunnelPayload>('/api/top100/funnel', { headers: viewHeaders(opts) }),
+  top100Funnel: (opts?: ViewOpts, params: { gap_only?: boolean } = {}) =>
+    request<Top100FunnelPayload>(
+      `/api/top100/funnel${params.gap_only ? '?gap_only=1' : ''}`,
+      { headers: viewHeaders(opts) },
+    ),
+  // Excel round-trip: re-import an edited top100.xlsx (multipart 'file',
+  // <= 1MB). Rows match by store_number; changed priority_rank (and valid
+  // owner_status) values apply through the same audited re-sequence path.
+  top100ImportXlsx: (formData: FormData, opts?: ViewOpts) =>
+    request<Top100ImportXlsxPayload>('/api/top100/import-xlsx', {
+      method: 'POST',
+      body: formData,
+      headers: viewHeaders(opts),
+    }),
 
   // ===== Owner mode =====
   // Server-side passcode check (OWNER_PASSCODE env on the backend). The
@@ -2924,6 +2954,41 @@ export interface Top100FunnelPayload {
   board_size: number;
   funnel: Record<string, number>;
   order: string[];
+}
+
+/** POST /api/top100/import-xlsx → per-row apply/skip result. */
+export interface Top100ImportXlsxPayload {
+  updated: number;
+  skipped: Array<{ store_number: number | string | null; reason: string }>;
+  total_ranked: number;
+  status?: string;
+}
+
+/** One audited contact-field change (old -> new, who, when). */
+export interface ContactHistoryEntry {
+  old: string;
+  new: string;
+  changed_by: string;
+  changed_at: string;
+}
+
+/** Per-field block: current value, the restore candidate (most recent prior
+ *  value that is neither blank nor the current value), and up to 10 prior
+ *  changes, newest first. */
+export interface ContactFieldHistory {
+  current: string;
+  previous: string;
+  history: ContactHistoryEntry[];
+}
+
+/** GET /api/crm/store/<n>/contacts/history (see
+ *  api_crm_store_contacts_history) — `contacts` keyed by field name
+ *  (manager_name, asst_manager_name, spirits_ambassador). INTERNAL ONLY:
+ *  deliberately absent from the owner allowlist. */
+export interface StoreContactsHistoryPayload {
+  store_number: number;
+  store_id: number;
+  contacts: Record<string, ContactFieldHistory>;
 }
 
 export interface ManagerDashboardPayload {
