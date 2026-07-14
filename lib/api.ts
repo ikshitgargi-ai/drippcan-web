@@ -756,15 +756,6 @@ export const api = {
       headers: viewHeaders(opts),
     }),
 
-  // ===== Owner mode =====
-  // Server-side passcode check (OWNER_PASSCODE env on the backend). The
-  // passcode never lives in frontend code — only the ok/deny result does.
-  ownerCheck: (passcode: string) =>
-    request<{ ok: boolean }>('/api/owner/check', {
-      method: 'POST',
-      body: JSON.stringify({ passcode }),
-    }),
-
   // ===== XLSX exports (openpyxl on the backend) =====
   // URL builders for <a href> downloads — headers can't ride along, so the
   // owner view is selected with ?view=owner instead.
