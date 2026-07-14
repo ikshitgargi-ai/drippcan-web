@@ -4,88 +4,82 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  TrendingUp,
-  TrendingDown,
   AlertTriangle,
-  ChevronRight,
-  Tag,
   Calendar,
+  ChevronRight,
+  Database,
+  Globe2,
+  MapPin,
+  Navigation,
   Plus,
+  Tag,
+  TrendingUp,
   X,
   Activity as ActivityIcon,
-  Target,
-  Package,
-  Phone,
-  Sparkles,
-  Navigation,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { captureSilentGeo } from '@/lib/silent-geo';
 import { useActiveRep } from '@/lib/active-rep';
+import { REP_ROSTER } from '@/lib/reps';
+import { TRACKED_SKUS } from '@/lib/skus';
 import { FreshnessBanner } from '@/components/freshness-banner';
 import { Button } from '@/components/ui/button';
 import { StoreLookup } from '@/components/store-lookup';
-import { formatNumber, formatDate, statusBadgeClass, statusLabel, relativeTime } from '@/lib/utils';
+import { formatNumber, relativeTime } from '@/lib/utils';
 
 /**
- * THE ONE PAGE — every important section lives here, vertically scrolled.
- * Bottom tabs scroll to anchors instead of navigating to other URLs.
- *
- * Sections:
- *   #today      — rep's daily plan
- *   #brands     — NB Distillers + Goenchi + Fratelli health
- *   #intel      — new stores / new inventory / delistings (last 60d)
- *   #pipeline   — open deals by stage
- *   #activity   — team activity feed
+ * HOME — deliberately simple. One screen answers:
+ *   #skus  — how are Phoenix & Dayaa doing? (stores, on hand, live qty)
+ *   territory — how big is the book we're working?
+ *   #intel — OOS risk count, new listings count, last SOD/live sync times
+ * Everything deeper lives on its own page (nav drawer).
  */
 export default function HomePage() {
   const [activeRep] = useActiveRep();
   const [logSheet, setLogSheet] = useState(false);
   const qc = useQueryClient();
 
-  const brands = useQuery({ queryKey: ['brands'], queryFn: api.brands });
-  const additions = useQuery({
-    queryKey: ['additions', { days: 60 }],
-    queryFn: () => api.distributionAdditions({ days: 60 }),
-  });
-  const invAdds = useQuery({
-    queryKey: ['inv-adds', 60],
-    queryFn: () => api.inventoryAdds({ days: 60 }),
-  });
-  const today = useQuery({
-    queryKey: ['today', activeRep],
-    queryFn: () => api.today(activeRep!, 5),
-    enabled: !!activeRep,
-  });
-  const dash = useQuery({ queryKey: ['crm-dashboard'], queryFn: api.crmDashboard });
-  const digest = useQuery({ queryKey: ['digest', 7], queryFn: () => api.listingDigest(7) });
+  const dash = useQuery({ queryKey: ['crm-dashboard'], queryFn: () => api.crmDashboard() });
   const oos = useQuery({ queryKey: ['oos', 2], queryFn: () => api.oosRisk({ threshold: 2 }) });
-  const lcboLive = useQuery({
-    queryKey: ['lcbo-live', 30],
-    queryFn: () => api.lcboLiveDiscoveries(30),
+  const digest = useQuery({ queryKey: ['digest', 7], queryFn: () => api.listingDigest(7, true) });
+  const sodHealth = useQuery({ queryKey: ['sod-health'], queryFn: api.sodHealth });
+  // New Dripp endpoints — degrade to placeholders until the backend ships them.
+  const territory = useQuery({
+    queryKey: ['territory-summary'],
+    queryFn: () => api.territory(),
+    retry: 1,
   });
-  const followups = useQuery({
-    queryKey: ['tasting-followups', 180],
-    queryFn: () => api.tastingFollowups(180),
+  const live = useQuery({
+    queryKey: ['live-latest'],
+    queryFn: () => api.liveLatest(),
+    retry: 1,
   });
-  const deals = useQuery({ queryKey: ['deals', { active_only: true }], queryFn: () => api.deals({}) });
-  const activity = useQuery({
-    queryKey: ['activities', { days: 14 }],
-    queryFn: () => api.activities({ days: 14 }),
-  });
-  const tracked = useQuery({
-    queryKey: ['sod-products', true],
-    queryFn: () => api.sodProducts(true),
-  });
-  const trackedList = tracked.data?.products ?? tracked.data?.rows ?? [];
 
-  const recentChanges = (digest.data?.changes ?? []).slice(0, 5);
-  const newCount =
+  const rollup = dash.data?.tracked_sku_rollup ?? [];
+  const rollupBySku = new Map(rollup.map((r) => [r.sku, r]));
+  // /api/live/latest is keyed by SKU: { skus: { [sku]: { total_units, ... } } }
+  const liveSkus = live.data?.skus;
+  const liveChecked = liveSkus
+    ? Object.values(liveSkus).reduce<string | null>(
+        (best, blk) => (blk.checked_at && (!best || blk.checked_at > best) ? blk.checked_at : best),
+        null,
+      )
+    : null;
+
+  const newListings7d =
     (digest.data?.counts.find((c) => c.change_type === 'NEW_LISTING')?.count ?? 0) +
     (digest.data?.counts.find((c) => c.change_type === 'RELISTED')?.count ?? 0);
-  const delistedCount =
-    digest.data?.counts.find((c) => c.change_type === 'DELISTED')?.count ?? 0;
+
+  // /api/territory returns { count, stores } — tier counts derived here.
+  const territoryStores = territory.data?.stores;
+  const byTier = territoryStores
+    ? territoryStores.reduce<Record<string, number>>((acc, s) => {
+        acc[s.tier] = (acc[s.tier] ?? 0) + 1;
+        return acc;
+      }, {})
+    : undefined;
+  const territoryTotal = territory.data?.count ?? territoryStores?.length ?? null;
 
   return (
     <div className="space-y-6 pb-24">
@@ -93,505 +87,145 @@ export default function HomePage() {
         <div className="flex items-center gap-2">
           <span className="pulse-dot" />
           <span className="muted-small font-semibold uppercase tracking-wider">
-            Live · 24/7 Agent
+            Dripp Tracker
           </span>
         </div>
-        <h1>Anu LCBO Tracker</h1>
+        <h1>Phoenix &amp; Dayaa at LCBO</h1>
         <p className="text-muted text-sm">
-          Real-time distribution intel from SOD + LCBO.com.
+          SOD + lcbo.com + rep observations, reconciled — nothing silently wrong or lost.
         </p>
       </header>
 
       <FreshnessBanner />
 
-      {/* Top KPI strip */}
-      <div className="grid grid-cols-4 gap-2">
-        <MiniKpi
-          label="Listed"
-          value={brands.data?.brands.reduce((s, b) => s + b.total_listed, 0) ?? '—'}
-          color="var(--color-success)"
-        />
-        <MiniKpi
-          label="Delisting"
-          value={brands.data?.brands.reduce((s, b) => s + b.total_delisting, 0) ?? '—'}
-          color="var(--color-warning)"
-        />
-        <MiniKpi
-          label="OOS Risk"
-          value={oos.data?.length ?? '—'}
-          color="var(--color-danger)"
-        />
-        <MiniKpi
-          label="New 60d"
-          value={additions.data?.total ?? '—'}
-          color="var(--color-accent)"
-        />
-      </div>
+      {/* SECTION: the 2 SKU cards */}
+      <section id="skus" className="scroll-mt-20 space-y-2.5">
+        <SectionHeader icon={<Tag size={18} />} title="Our SKUs" linkLabel="Details" linkHref="/skus" />
+        {dash.isLoading &&
+          Array.from({ length: 2 }).map((_, i) => <div key={i} className="skeleton h-28" />)}
+        {TRACKED_SKUS.map((s) => {
+          const r = rollupBySku.get(s.sku);
+          const liveQty = liveSkus?.[s.sku]?.total_units ?? null;
+          return (
+            <Link key={s.sku} href={`/skus/${s.sku}`} className="m-card block">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="!text-base">{s.brand}</h3>
+                    <span className="text-xs text-muted">#{s.sku}</span>
+                  </div>
+                  <div className="text-xs text-muted truncate">{s.name}</div>
+                </div>
+                <ChevronRight size={16} className="text-muted shrink-0" />
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-[var(--color-card-border)]">
+                <KpiCell label="Stores (SOD)" value={r ? formatNumber(r.store_count) : '—'} />
+                <KpiCell
+                  label="On hand (SOD)"
+                  value={r ? formatNumber(r.total_on_hand) : '—'}
+                  color="var(--color-success)"
+                />
+                <KpiCell
+                  label="Live (lcbo.com)"
+                  value={liveQty != null ? formatNumber(liveQty) : '—'}
+                  color="var(--color-accent)"
+                />
+              </div>
+            </Link>
+          );
+        })}
+      </section>
 
-      {/* SECTION: TODAY */}
-      <section id="today" className="scroll-mt-20 space-y-2.5">
-        <SectionHeader icon={<Calendar size={18} />} title="Today's Plan" linkLabel="All stops" linkHref="/today" />
-        {activeRep ? (
-          today.data && today.data.stops.length > 0 ? (
-            <>
-              <div className="grid grid-cols-3 gap-2.5">
-                <Stat label="Stops" value={today.data.total_stops} />
-                <Stat label="Drive" value={`${today.data.total_distance_km}km`} />
-                <Stat label="Open" value={today.data.overdue_deal_actions} />
-              </div>
-              <div className="space-y-2">
-                {today.data.stops.slice(0, 3).map((s, i) => (
-                  <Link
-                    key={s.store_id}
-                    href={`/stores/${s.store_number}`}
-                    className="m-card flex items-center gap-3"
-                  >
-                    <div
-                      className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border-2"
-                      style={{ borderColor: 'var(--color-accent)', color: 'var(--color-accent)' }}
-                    >
-                      {i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm truncate">
-                        #{s.store_number} · {s.account}
-                      </div>
-                      <div className="text-xs text-muted truncate">
-                        {s.city} ·{' '}
-                        {s.days_since_visit != null
-                          ? `last visit ${s.days_since_visit}d ago`
-                          : 'never visited'}
-                      </div>
-                    </div>
-                    {s.oos_count > 0 && (
-                      <span className="change-chip change-DELISTED">{s.oos_count} OOS</span>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="m-card text-center py-6 text-muted text-sm">
-              No stops scheduled for {activeRep}.
-            </div>
-          )
+      {/* SECTION: territory summary */}
+      <section className="scroll-mt-20 space-y-2.5">
+        <SectionHeader
+          icon={<Globe2 size={18} />}
+          title="Territory"
+          linkLabel="Store finder"
+          linkHref="/finder"
+        />
+        {territory.isError || (!territory.isLoading && territoryTotal == null) ? (
+          <div className="m-card text-sm text-muted">
+            Territory book not seeded yet — run the territory ingest on the backend.
+          </div>
         ) : (
-          <Link href="/today" className="m-card flex items-center gap-3">
-            <Calendar size={20} className="text-[var(--color-accent)]" />
-            <div className="flex-1">
-              <div className="font-semibold text-sm">Set your active rep</div>
-              <div className="text-xs text-muted">Pick yourself to see today&apos;s ranked stops</div>
-            </div>
-            <ChevronRight size={16} className="text-muted" />
-          </Link>
+          <div className="grid grid-cols-3 gap-2.5">
+            <Stat label="Stores" value={territoryTotal != null ? formatNumber(territoryTotal) : '—'} />
+            <Stat label="Routed" value={byTier?.routed != null ? formatNumber(byTier.routed) : '—'} />
+            <Stat
+              label="Wider GTA"
+              value={
+                byTier
+                  ? formatNumber((byTier.territory ?? 0) + (byTier.discovered ?? 0))
+                  : '—'
+              }
+            />
+          </div>
         )}
       </section>
 
-      {/* SECTION: BRANDS */}
-      <section id="brands" className="scroll-mt-20 space-y-2.5">
-        <SectionHeader icon={<Tag size={18} />} title="Our Brands" linkLabel="Drill in" linkHref="/brands" />
-        {brands.isLoading &&
-          Array.from({ length: 3 }).map((_, i) => <div key={i} className="skeleton h-28" />)}
-        {brands.data?.brands.map((b) => (
-          <Link key={b.brand} href={`/brands/${encodeURIComponent(b.slug)}`} className="m-card block">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="!text-base">{b.brand}</h3>
-                  <span className="text-xs text-muted">{b.sku_count} SKUs</span>
-                </div>
-                <div className="text-xs text-muted truncate">
-                  {b.skus.map((s) => s.product_name).join(' · ')}
-                </div>
-              </div>
-              <ChevronRight size={16} className="text-muted shrink-0" />
-            </div>
-            <div className="grid grid-cols-4 gap-1.5 mt-3 pt-3 border-t border-[var(--color-card-border)]">
-              <KpiCell label="Stores" value={b.total_stores} />
-              <KpiCell label="Listed" value={b.total_listed} color="var(--color-success)" />
-              <KpiCell
-                label="Delisting"
-                value={b.total_delisting}
-                color={b.total_delisting > 0 ? 'var(--color-warning)' : 'var(--color-muted)'}
-              />
-              <KpiCell
-                label="New 60d"
-                value={b.additions_60d}
-                color={b.additions_60d > 0 ? 'var(--color-accent)' : 'var(--color-muted)'}
-                icon={b.additions_60d > 0 ? <TrendingUp size={11} /> : undefined}
-              />
-            </div>
-          </Link>
-        ))}
-      </section>
-
-      {/* SECTION: INTEL — what's changing */}
-      <section id="intel" className="scroll-mt-20 space-y-3">
-        <SectionHeader icon={<ActivityIcon size={18} />} title="What's Changing" linkLabel="Full feed" linkHref="/intel" />
-
-        {/* Quick stats */}
+      {/* SECTION: intel — risk, movement, sync freshness */}
+      <section id="intel" className="scroll-mt-20 space-y-2.5">
+        <SectionHeader icon={<ActivityIcon size={18} />} title="Intel" linkLabel="Full feed" linkHref="/intel" />
         <div className="grid grid-cols-2 gap-2.5">
-          <div className="m-card">
+          <Link href="/oos" className="m-card block">
             <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted font-semibold">
-              <span>New Stores 60d</span>
+              <span>OOS Risk</span>
+              <AlertTriangle size={14} style={{ color: 'var(--color-danger)' }} />
+            </div>
+            <div
+              className="text-3xl font-bold mt-1.5 tabular-nums"
+              style={{ color: 'var(--color-danger)' }}
+            >
+              {oos.data ? oos.data.length : '—'}
+            </div>
+            <div className="text-[10px] text-muted mt-0.5">stores at ≤2 units</div>
+          </Link>
+          <Link href="/new-listings" className="m-card block">
+            <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted font-semibold">
+              <span>New Listings 7d</span>
               <TrendingUp size={14} style={{ color: 'var(--color-success)' }} />
             </div>
-            <div className="text-3xl font-bold mt-1.5 tabular-nums" style={{ color: 'var(--color-success)' }}>
-              {additions.data?.total ?? '—'}
+            <div
+              className="text-3xl font-bold mt-1.5 tabular-nums"
+              style={{ color: 'var(--color-success)' }}
+            >
+              {digest.data ? newListings7d : '—'}
             </div>
-          </div>
-          <div className="m-card">
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted font-semibold">
-              <span>Delisted 7d</span>
-              <TrendingDown size={14} style={{ color: 'var(--color-danger)' }} />
-            </div>
-            <div className="text-3xl font-bold mt-1.5 tabular-nums" style={{ color: 'var(--color-danger)' }}>
-              {delistedCount}
-            </div>
-          </div>
+            <div className="text-[10px] text-muted mt-0.5">incl. relistings</div>
+          </Link>
         </div>
 
-        {/* Recent additions feed */}
-        {additions.data?.additions && additions.data.additions.length > 0 && (
-          <>
-            <div className="text-xs text-muted font-semibold uppercase tracking-wider px-1">
-              Most recent new stores
+        {/* Sync freshness — both sources, timestamps always visible */}
+        <div className="m-card space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-sm">
+              <Database size={14} className="text-[var(--color-accent)]" />
+              <span className="font-semibold">Last SOD sync</span>
             </div>
-            <div className="space-y-2">
-              {additions.data.additions.slice(0, 4).map((a, i) => (
-                <Link key={i} href={`/stores/${a.store_number}`} className="m-card block">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                        <span className="change-chip change-NEW_LISTING">NEW</span>
-                        {a.current_status && (
-                          <span className={statusBadgeClass(a.current_status)}>
-                            now {statusLabel(a.current_status)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="font-medium text-sm truncate">
-                        #{a.store_number} · {a.account ?? '—'}
-                      </div>
-                      <div className="text-xs text-muted truncate">
-                        {a.brand} {a.product_name} · {a.city}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-xs text-muted">{formatDate(a.change_date)}</div>
-                      <div className="text-sm font-bold tabular-nums">{a.current_on_hand}</div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+            <Link href="/sod" className="text-xs text-muted tabular-nums hover:text-[var(--color-accent)]">
+              {sodHealth.data?.latest_snapshot
+                ? `snapshot ${sodHealth.data.latest_snapshot}`
+                : sodHealth.isLoading
+                  ? '…'
+                  : 'never'}
+            </Link>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-sm">
+              <MapPin size={14} className="text-[var(--color-accent)]" />
+              <span className="font-semibold">Last lcbo.com check</span>
             </div>
-          </>
-        )}
-
-        {/* Inventory restocks */}
-        {invAdds.data?.events && invAdds.data.events.length > 0 && (
-          <>
-            <div className="text-xs text-muted font-semibold uppercase tracking-wider px-1 mt-3">
-              New inventory shipments
-            </div>
-            <div className="space-y-2">
-              {invAdds.data.events.slice(0, 3).map((e, i) => (
-                <Link key={i} href={`/stores/${e.store_number}`} className="m-card block">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <span
-                        className="change-chip"
-                        style={{
-                          background: 'rgba(212,165,116,0.18)',
-                          color: 'var(--color-accent)',
-                        }}
-                      >
-                        +{e.jump} units
-                      </span>
-                      <div className="font-medium text-sm truncate mt-1">
-                        #{e.store_number} · {e.account ?? '—'}
-                      </div>
-                      <div className="text-xs text-muted truncate">
-                        {e.brand} {e.product_name} · {e.city}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-xs text-muted">{formatDate(e.snapshot_date)}</div>
-                      <div className="text-sm font-bold tabular-nums">{e.on_hand}</div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* Recent listing changes */}
-        {recentChanges.length > 0 && (
-          <>
-            <div className="text-xs text-muted font-semibold uppercase tracking-wider px-1 mt-3">
-              Recent listing changes
-            </div>
-            <div className="space-y-2">
-              {recentChanges.map((c, i) => (
-                <div
-                  key={i}
-                  className={`m-card ${c.is_tracked ? 'border-[var(--color-accent)]/40' : ''}`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={`change-chip change-${c.change_type}`}>
-                          {c.change_type.replace('_', ' ')}
-                        </span>
-                        {c.is_tracked && <span className="change-chip change-BASELINE">OURS</span>}
-                      </div>
-                      <div className="mt-1.5 font-medium text-sm truncate">
-                        {c.product_name || <span className="text-muted">Unknown</span>}
-                      </div>
-                    </div>
-                    <div className="text-xs text-muted shrink-0">{relativeTime(c.change_date)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+            <span className="text-xs text-muted tabular-nums">
+              {liveChecked
+                ? relativeTime(liveChecked)
+                : live.isLoading
+                  ? '…'
+                  : 'not yet run'}
+            </span>
+          </div>
+        </div>
       </section>
-
-      {/* SECTION: FOLLOW-UPS (tasting done, no listing) — only show if any */}
-      {followups.data && followups.data.total > 0 && (
-        <section id="followups" className="scroll-mt-20 space-y-2.5">
-          <SectionHeader
-            icon={<TrendingUp size={18} />}
-            title="Tasting Follow-ups"
-            linkLabel="All"
-            linkHref="/follow-ups"
-          />
-          <p className="text-xs text-muted -mt-1">
-            We tasted / left samples here, but SKU still isn&apos;t on shelf.
-          </p>
-          <div className="space-y-2">
-            {followups.data.followups.slice(0, 4).map((f, i) => (
-              <Link
-                key={i}
-                href={`/stores/${f.store_number}`}
-                className="m-card block"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                      <span
-                        className="change-chip"
-                        style={{
-                          background:
-                            f.priority_score >= 80
-                              ? 'rgba(239,75,75,0.18)'
-                              : 'rgba(253,203,110,0.18)',
-                          color:
-                            f.priority_score >= 80
-                              ? 'var(--color-danger)'
-                              : 'var(--color-warning)',
-                        }}
-                      >
-                        {f.tasting_outcome || f.activity_type}
-                      </span>
-                      {f.current_sod_status === 'D' && (
-                        <span className="change-chip change-DELISTED">SOD: D</span>
-                      )}
-                      {!f.current_sod_status && (
-                        <span className="change-chip change-BASELINE">missing</span>
-                      )}
-                    </div>
-                    <div className="font-medium text-sm truncate">
-                      #{f.store_number} · {f.account ?? '—'}
-                    </div>
-                    <div className="text-xs text-muted truncate">
-                      {f.brand} {f.product_name} · {f.city}
-                    </div>
-                  </div>
-                  <div className="text-xs text-muted shrink-0 text-right">
-                    {f.days_since_tasting != null ? `${f.days_since_tasting}d ago` : '—'}
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* SECTION: LCBO LIVE DISCOVERIES (only show if any) */}
-      {lcboLive.data && lcboLive.data.total > 0 && (
-        <section id="lcbo-live" className="scroll-mt-20 space-y-2.5">
-          <SectionHeader
-            icon={<TrendingUp size={18} />}
-            title="LCBO Live Discoveries"
-            linkLabel="All"
-            linkHref="/intel"
-          />
-          <p className="text-xs text-muted -mt-1">
-            Stores where lcbo.com shows our SKU live but SOD doesn&apos;t. Refresh every 2h.
-          </p>
-          <div className="space-y-2">
-            {lcboLive.data.discoveries.slice(0, 4).map((d, i) => (
-              <Link
-                key={i}
-                href={`/stores/${d.store_number}`}
-                className="m-card block border-[#a78bfa]/40"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                      <span
-                        className="change-chip"
-                        style={{ background: 'rgba(167,139,250,0.2)', color: '#a78bfa' }}
-                      >
-                        LCBO LIVE
-                      </span>
-                      {d.current_sod_status === 'F' && (
-                        <span className="change-chip change-DELISTED">SOD: F</span>
-                      )}
-                      {!d.current_sod_status && (
-                        <span className="change-chip change-BASELINE">SOD: missing</span>
-                      )}
-                    </div>
-                    <div className="font-medium text-sm truncate">
-                      #{d.store_number} · {d.account ?? '—'}
-                    </div>
-                    <div className="text-xs text-muted truncate">
-                      {d.brand} {d.product_name} · {d.city}
-                    </div>
-                  </div>
-                  <div className="text-xs text-muted shrink-0">{formatDate(d.change_date)}</div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* SECTION: PIPELINE */}
-      <section id="pipeline" className="scroll-mt-20 space-y-2.5">
-        <SectionHeader icon={<Target size={18} />} title="Pipeline" linkLabel="Kanban" linkHref="/pipeline" />
-        {deals.data?.deals && deals.data.deals.length > 0 ? (
-          <>
-            <div className="grid grid-cols-3 gap-2.5">
-              {Object.entries(deals.data.stage_counts).slice(0, 3).map(([stage, count]) => (
-                <Stat key={stage} label={stage.replace(/_/g, ' ')} value={count} />
-              ))}
-            </div>
-            <div className="space-y-2">
-              {deals.data.deals.slice(0, 3).map((d) => (
-                <Link
-                  key={d.id}
-                  href={`/stores/${d.store_number}`}
-                  className="m-card block"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm truncate">
-                        {d.brand} {d.product_name}
-                      </div>
-                      <div className="text-xs text-muted">
-                        Store #{d.store_number} · owner: {d.owner_rep || '—'}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="change-chip change-STATUS_FLIP">{d.stage}</span>
-                      <div className="text-xs text-muted mt-1 tabular-nums">{d.probability}%</div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="m-card text-center py-6 text-muted text-sm">
-            No active deals. Use{' '}
-            <Link href="/intel" className="text-[var(--color-accent)] underline">
-              Intel
-            </Link>{' '}
-            → tap a store → &quot;Replace These&quot; to add pitches.
-          </div>
-        )}
-      </section>
-
-      {/* SECTION: ACTIVITY */}
-      <section id="activity" className="scroll-mt-20 space-y-2.5">
-        <SectionHeader icon={<Phone size={18} />} title="Recent Activity" linkLabel="All" linkHref="/activity" />
-        {activity.data?.activities && activity.data.activities.length > 0 ? (
-          <div className="space-y-2">
-            {activity.data.activities.slice(0, 4).map((a) => (
-              <div key={a.id} className="m-card">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="change-chip change-BASELINE">{a.activity_type}</span>
-                  <span className="text-xs text-muted">{relativeTime(a.created_at)}</span>
-                </div>
-                {a.account ? (
-                  <Link
-                    href={`/stores/${a.store_number}`}
-                    className="font-medium text-sm hover:text-[var(--color-accent)]"
-                  >
-                    #{a.store_number} · {a.account}
-                  </Link>
-                ) : (
-                  <span className="text-sm">{a.horeca_name ?? '—'}</span>
-                )}
-                {a.outcome && <div className="text-xs text-muted mt-1">{a.outcome}</div>}
-                <div className="text-xs text-muted mt-1">by {a.rep || '—'}</div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="m-card text-center py-6 text-muted text-sm">
-            No activity logged yet.{' '}
-            <button
-              onClick={() => setLogSheet(true)}
-              className="text-[var(--color-accent)] underline"
-            >
-              Log a visit
-            </button>
-            .
-          </div>
-        )}
-      </section>
-
-      {/* SECTION: OOS */}
-      {oos.data && oos.data.length > 0 && (
-        <section id="oos" className="scroll-mt-20 space-y-2.5">
-          <SectionHeader
-            icon={<AlertTriangle size={18} style={{ color: 'var(--color-danger)' }} />}
-            title="OOS Risk"
-            linkLabel="All"
-            linkHref="/oos"
-          />
-          <div className="space-y-2">
-            {oos.data.slice(0, 3).map((r, i) => (
-              <Link key={i} href={`/stores/${r.store_number}`} className="m-card block">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate">
-                      #{r.store_number} · {r.account}
-                    </div>
-                    <div className="text-xs text-muted truncate">
-                      {r.product_name} · {r.city}
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div
-                      className="text-2xl font-bold tabular-nums"
-                      style={{ color: 'var(--color-danger)' }}
-                    >
-                      {r.on_hand}
-                    </div>
-                    <div className="text-[10px] text-muted">on hand</div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Quick actions */}
       <section className="space-y-2.5">
@@ -615,28 +249,10 @@ export default function HomePage() {
             label="Nearby"
             color="var(--color-success)"
           />
-          <ActionTile
-            href="/ask"
-            icon={<Sparkles size={20} />}
-            label="Ask AI"
-            color="#a78bfa"
-          />
-          <ActionTile
-            href="/pipeline"
-            icon={<Target size={20} />}
-            label="Pipeline"
-            color="#f59e0b"
-          />
-          <ActionTile
-            href="/intel"
-            icon={<Package size={20} />}
-            label="Intel"
-            color="#74b9ff"
-          />
         </div>
       </section>
 
-      {/* Floating "+" Mark Listing button */}
+      {/* Floating "+" quick-log button */}
       <button
         onClick={() => setLogSheet(true)}
         aria-label="Log activity"
@@ -647,13 +263,11 @@ export default function HomePage() {
 
       {logSheet && (
         <QuickLogSheet
-          trackedSkus={trackedList}
           activeRep={activeRep}
           onClose={() => setLogSheet(false)}
           onLogged={() => {
-            qc.invalidateQueries({ queryKey: ['additions'] });
-            qc.invalidateQueries({ queryKey: ['brands'] });
-            qc.invalidateQueries({ queryKey: ['activities'] });
+            qc.invalidateQueries({ queryKey: ['crm-dashboard'] });
+            qc.invalidateQueries({ queryKey: ['digest'] });
           }}
         />
       )}
@@ -687,46 +301,22 @@ function SectionHeader({
   );
 }
 
-function MiniKpi({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string | number;
-  color: string;
-}) {
-  return (
-    <div className="m-card text-center !p-2.5">
-      <div className="text-[9px] uppercase tracking-wider text-muted font-semibold leading-tight">
-        {label}
-      </div>
-      <div className="text-xl font-bold tabular-nums mt-0.5" style={{ color }}>
-        {value}
-      </div>
-    </div>
-  );
-}
-
 function KpiCell({
   label,
   value,
   color,
-  icon,
 }: {
   label: string;
   value: string | number;
   color?: string;
-  icon?: React.ReactNode;
 }) {
   return (
     <div>
       <div className="text-[10px] uppercase tracking-wider text-muted font-semibold">{label}</div>
       <div
-        className="text-base font-bold tabular-nums mt-0.5 flex items-center gap-1"
+        className="text-base font-bold tabular-nums mt-0.5"
         style={{ color: color ?? 'var(--color-foreground)' }}
       >
-        {icon}
         {value}
       </div>
     </div>
@@ -775,16 +365,11 @@ function ActionTile({
   );
 }
 
-// Hardcoded official roster — used in the Quick-Log sheet and other selectors
-const REP_ROSTER = ['Ikshit', 'Virat', 'Namit', 'Surya', 'Neeraj'];
-
 function QuickLogSheet({
-  trackedSkus,
   activeRep,
   onClose,
   onLogged,
 }: {
-  trackedSkus: Array<{ sku: string; product_name: string; brand: string }>;
   activeRep: string | null;
   onClose: () => void;
   onLogged: () => void;
@@ -793,7 +378,7 @@ function QuickLogSheet({
   const [rep, setLocalRep] = useState<string>(activeRep ?? '');
   const [mode, setMode] = useState<'visit' | 'listing'>('visit');
   const [storeNumber, setStoreNumber] = useState('');
-  const [sku, setSku] = useState(trackedSkus[0]?.sku ?? '');
+  const [sku, setSku] = useState<string>(TRACKED_SKUS[0].sku);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [activityType, setActivityType] = useState<'store_visit' | 'tasting' | 'meeting' | 'order_commitment' | 'delivery' | 'sample_drop' | 'call' | 'email'>('store_visit');
   const [notes, setNotes] = useState('');
@@ -934,9 +519,9 @@ function QuickLogSheet({
             <>
               <Field label="Product">
                 <select value={sku} onChange={(e) => setSku(e.target.value)} className="select">
-                  {trackedSkus.map((p) => (
+                  {TRACKED_SKUS.map((p) => (
                     <option key={p.sku} value={p.sku}>
-                      {p.brand} {p.product_name}
+                      {p.name}
                     </option>
                   ))}
                 </select>

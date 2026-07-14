@@ -19,8 +19,7 @@ import {
 import { api, type FinderStore } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { FreshnessBanner } from '@/components/freshness-banner';
-
-const REPS = ['Ikshit', 'Virat', 'Namit', 'Surya', 'Neeraj'];
+import { REP_ROSTER as REPS } from '@/lib/reps';
 
 function daysAgo(iso: string | null): string {
   if (!iso) return '—';

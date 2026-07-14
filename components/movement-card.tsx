@@ -90,9 +90,8 @@ export function MovementCard({
 
       {/* Source-drift hint badge if any disagreements */}
       {m && (m.store_universe.carrying_only_lcbo ?? 0) + (m.store_universe.carrying_only_sod ?? 0) > 0 && (
-        <Link
-          href="/source-drift"
-          className="block px-4 py-2 text-xs border-t border-[var(--color-card-border)] bg-[rgba(212,165,116,0.04)] hover:bg-[rgba(212,165,116,0.08)] flex items-center gap-2"
+        <div
+          className="px-4 py-2 text-xs border-t border-[var(--color-card-border)] bg-[rgba(212,165,116,0.04)] flex items-center gap-2"
         >
           <GitBranch size={12} className="text-[var(--color-accent)]" />
           <span className="flex-1">
@@ -103,10 +102,9 @@ export function MovementCard({
             <span className="text-[var(--color-warning)] font-semibold">
               {m.store_universe.carrying_only_sod}
             </span>{' '}
-            only in SOD →
+            only in SOD
           </span>
-          <span className="text-[var(--color-accent)]">View Source Drift</span>
-        </Link>
+        </div>
       )}
 
       {/* Expand toggle */}

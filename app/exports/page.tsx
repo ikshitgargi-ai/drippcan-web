@@ -14,28 +14,19 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { REP_ROSTER } from '@/lib/reps';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatNumber } from '@/lib/utils';
-import { PasscodeGate } from '@/components/passcode-gate';
 
 /**
- * Exports — operator-only one-click bundle of every CSV in the system,
- * plus a rep-behavior analytics view that flags reps revisiting the same
- * stores or going dormant. The download is meant to feed into ChatGPT/
- * Claude so the operator can run "are reps actually working?" analyses.
+ * Exports — one-click bundle of every CSV in the system, plus a
+ * rep-behavior analytics view that flags reps revisiting the same
+ * stores or going dormant. The download is meant to feed into AI
+ * analysis so the operator can run "are reps actually working?" checks.
  */
 export default function ExportsPage() {
-  return (
-    <PasscodeGate
-      storageKey="commission_audit_unlocked"
-      passcode="0257"
-      title="Data Exports & Rep Behavior"
-      description="Operator-only view. Same passcode as Commission Audit."
-    >
-      <ExportsInner />
-    </PasscodeGate>
-  );
+  return <ExportsInner />;
 }
 
 function ExportsInner() {
@@ -329,10 +320,6 @@ Return a markdown table sorted by total visits descending.`}
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {[
-            { href: '/commission-audit', label: 'Commission Audit', desc: 'Per-store SOD vs lcbo.com — monthly CSV claim' },
-            { href: '/hidden-listings', label: 'Hidden Listings', desc: '4-pattern fraud audit (ghosts, hidden inv, flickers, mass-delist)' },
-            { href: '/sod-compare', label: 'SOD Compare', desc: 'Upload historical ZIPs & diff' },
-            { href: '/source-drift', label: 'Source Drift', desc: 'Live SOD ∪ lcbo.com ∪ master ∪ rep observations' },
             { href: '/new-listings', label: 'New Listings', desc: 'Per-SKU snapshot diff over date range' },
             { href: '/sod', label: 'SOD Status', desc: 'Daily ingest health + per-source last-run details' },
           ].map((l) => (
@@ -356,10 +343,8 @@ Return a markdown table sorted by total visits descending.`}
 
 /**
  * RepActivityReportCard — pick a rep + period, preview the rollup, and
- * one-click download the row-level CSV (the artifact you submit to NB
- * Distillers or drop into ChatGPT).
+ * one-click download the row-level CSV for Excel pivots or AI analysis.
  */
-const REP_ROSTER = ['Ikshit', 'Namit', 'Virat', 'Surya', 'Neeraj'];
 const PERIOD_PRESETS: Array<{ key: string; label: string }> = [
   { key: 'today', label: 'Today' },
   { key: 'yesterday', label: 'Yesterday' },

@@ -3,7 +3,7 @@
 //
 // On upgrade: bump VERSION to invalidate ALL old caches and force fresh HTML.
 
-const VERSION = 'anu-lcbo-v4';
+const VERSION = 'dripp-tracker-v1';
 
 self.addEventListener('install', (e) => {
   // Take over immediately — don't wait for old tabs to close
@@ -31,7 +31,7 @@ self.addEventListener('fetch', (e) => {
   if (url.pathname.startsWith('/api/sod/sync') || url.pathname.includes('/refresh-')) return;
 
   // Same-origin API GETs only — never intercept cross-origin (e.g. Render
-  // backend at lcbo-tracker.onrender.com). Cross-origin fetches must hit
+  // backend at drippcan-tracker.onrender.com). Cross-origin fetches must hit
   // the network so the frontend's real fetch error handling fires;
   // intercepting them and returning a fake JSON 503 caused pages to render
   // {offline:true} as if it were real data.

@@ -10,10 +10,9 @@ import { formatNumber, formatDate } from '@/lib/utils';
 import { FreshnessBanner } from '@/components/freshness-banner';
 import { MovementCard } from '@/components/movement-card';
 import { SystemStatusIndicator } from '@/components/system-status-indicator';
-
-// Hardcoded official roster — was reading api.reps which omits reps without
-// prior activity. Reps self-select; activeRep persists in localStorage.
-const REP_ROSTER = ['Ikshit', 'Virat', 'Namit', 'Surya', 'Neeraj'];
+// Official roster (lib/reps) — api.reps omits reps without prior activity.
+// Reps self-select; activeRep persists in localStorage.
+import { REP_ROSTER } from '@/lib/reps';
 
 export default function TodayPage() {
   const [rep, setRep] = useActiveRep();

@@ -105,13 +105,9 @@ export default function NewListingsPage() {
               ({coverage.data.overall_days} days)
             </div>
             <div className="text-muted mt-0.5">
-              Diffs INSIDE this range work without any upload. For windows that
-              start before <strong>{coverage.data.overall_earliest}</strong>, upload a
-              historical SOD ZIP via{' '}
-              <Link href="/sod-compare" className="text-[var(--color-accent)] underline">
-                /sod-compare
-              </Link>{' '}
-              first.
+              Diffs INSIDE this range work without any upload. Windows that
+              start before <strong>{coverage.data.overall_earliest}</strong> need a
+              historical SOD ZIP imported on the backend first.
             </div>
           </div>
         </div>
@@ -374,12 +370,9 @@ export default function NewListingsPage() {
                                   {r.message ??
                                     `Our SOD ingest started on ${r.earliest_available_snapshot ?? 'unknown date'} — the requested start predates our history.`}
                                 </div>
-                                <Link
-                                  href="/sod-compare"
-                                  className="text-[var(--color-accent)] underline text-xs mt-2 inline-block"
-                                >
-                                  → Upload a historical SOD ZIP via /sod-compare
-                                </Link>
+                                <div className="text-muted text-xs mt-2">
+                                  Import a historical SOD ZIP on the backend to extend coverage.
+                                </div>
                               </div>
                             </div>
                           )}

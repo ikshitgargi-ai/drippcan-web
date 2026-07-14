@@ -1,13 +1,15 @@
-# Anu Spirits — LCBO Tracker Web
+# Dripp Tracker — Web
 
-Next.js 16 frontend for the Anu Spirits LCBO CRM. Mobile-first, PWA-installable,
-talks to the Flask backend at [lcbo-tracker.onrender.com](https://lcbo-tracker.onrender.com).
+Next.js 16 frontend for Dripp Tracker, the field sales tracker for the two
+Dripp Cann Spirits SKUs at LCBO (Phoenix Ultra Smooth Vodka #0014318 and
+Dayaa Arak #0044451). Mobile-first, PWA-installable, talks to the Flask
+backend at [drippcan-tracker.onrender.com](https://drippcan-tracker.onrender.com).
 
 ## Stack
 
 - **Next.js 16** (App Router, Turbopack) + **React 19**
 - **TypeScript**, strict mode
-- **Tailwind CSS 4** + custom design tokens (Anu brand: deep navy, burgundy accent, gold highlight)
+- **Tailwind CSS 4** + custom design tokens (deep navy, burgundy accent, gold highlight)
 - **Tanstack Query** for data fetching + cache
 - **shadcn/ui-style primitives** (components/ui/*)
 - **Leaflet + OpenStreetMap** for the store map (free tiles, no API key)
@@ -21,18 +23,16 @@ talks to the Flask backend at [lcbo-tracker.onrender.com](https://lcbo-tracker.o
 ```bash
 bun install
 bun run dev
-# => http://localhost:3000
+# => http://localhost:3002
 ```
 
-Set the backend URL if needed (defaults to production Render):
-
-```bash
-echo 'NEXT_PUBLIC_API_BASE=http://localhost:5050' > .env.local
-```
+Backend URL: leave `NEXT_PUBLIC_API_BASE` empty in `.env.local` (same-origin —
+next.config.ts rewrites `/api/*` to the Flask backend at `http://localhost:5070`
+in dev). Unset entirely, it falls back to the production Render URL.
 
 ## Pages
 
-- `/` Dashboard (KPIs, tracked-SKU rollup, recent changes, territory breakdown)
+- `/` Dashboard (2 SKU cards, territory summary, OOS + new-listing counts, sync times)
 - `/sod` SOD Live status + force-refresh
 - `/oos` OOS risk watch (critical/high/medium severity)
 - `/opportunities` Replace-slow-mover opportunity finder
@@ -48,20 +48,15 @@ echo 'NEXT_PUBLIC_API_BASE=http://localhost:5050' > .env.local
 ## Deploy to Vercel (one-click)
 
 1. Go to https://vercel.com/new
-2. Import Git Repository → select `ikshitgargi-ai/lcbo-tracker-web` → Deploy.
-3. Vercel auto-detects Next.js; no env vars required for defaults.
-
-Optional env vars:
-
-- `NEXT_PUBLIC_API_BASE` — backend URL (defaults to production Render).
+2. Import Git Repository → select the `drippcan-web` repo → Deploy.
+3. Set `NEXT_PUBLIC_API_BASE=https://drippcan-tracker.onrender.com`.
 
 ## Production backend CORS
 
 The Flask backend allows these origins by default:
 
-- `http://localhost:3000` / `http://localhost:3001` (dev)
-- `https://lcbo-tracker-web.vercel.app` (Vercel default)
-- `https://lcbo.anu-spirits.com` (custom domain, if configured)
+- `http://localhost:3002` (dev)
+- `https://drippcan-web.vercel.app` (Vercel default)
 
 To allow more, set `CORS_ORIGINS=comma,separated` on Render.
 

@@ -26,11 +26,10 @@ import {
   TrendingUp,
   Tag,
   Trophy,
-  DollarSign,
-  GitBranch,
-  ShieldAlert,
-  GitCompare,
   Download,
+  Scale,
+  Crown,
+  ListOrdered,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,22 +37,23 @@ import { cn } from '@/lib/utils';
 // so reps never feel like they're "leaving the app." Plus ONE manager link.
 const NAV = [
   { href: '/', label: 'Home', icon: LayoutDashboard, anchor: 'top' },
-  { href: '/#brands', label: 'Brands', icon: Tag, anchor: 'brands' },
+  { href: '/#skus', label: 'SKUs', icon: Tag, anchor: 'skus' },
   { href: '/#intel', label: 'Intel', icon: Activity, anchor: 'intel' },
-  { href: '/#today', label: 'Today', icon: Calendar, anchor: 'today' },
+  { href: '/log', label: 'Log', icon: Plus },
   { href: '/manager', label: 'Manager', icon: Trophy },
   // Drawer-only (after the 5-tab bar):
+  { href: '/territory', label: 'Territory Book', icon: MapPin },
+  { href: '/top100', label: 'Top-100 Board', icon: ListOrdered },
+  { href: '/reconcile', label: 'Reconcile (3-way)', icon: Scale },
+  { href: '/changes', label: 'Changes (X-day)', icon: TrendingUp },
   { href: '/finder', label: 'Store Finder', icon: MapPin },
+  { href: '/today', label: "Today's Plan", icon: Calendar },
   { href: '/territory-plan', label: '14-Day Territory Plan', icon: Calendar },
   { href: '/daily-log', label: 'Daily Log', icon: Activity },
   { href: '/rep-performance', label: 'Rep Performance', icon: Trophy },
-  { href: '/nb', label: 'NB Distillers ★', icon: Trophy },
-  { href: '/anu-import', label: 'Anu Import', icon: Tag },
   { href: '/route-planner', label: 'Route Planner', icon: Navigation },
-  { href: '/log', label: 'Log Visit', icon: Plus },
   { href: '/me', label: 'My Dashboard', icon: Trophy },
   { href: '/new-listings', label: 'New Listings (date range)', icon: TrendingUp },
-  { href: '/tastings', label: 'Tastings (Book + Calendar)', icon: Calendar },
   { href: '/follow-ups', label: 'Tasting Follow-ups', icon: AlertTriangle },
   { href: '/pipeline', label: 'Pipeline', icon: Target },
   { href: '/nearby', label: 'Nearby (GPS)', icon: Navigation },
@@ -62,11 +62,8 @@ const NAV = [
 
 // Secondary — only visible if explicitly opened (drawer "More" section)
 const NAV_SECONDARY = [
-  { href: '/exports', label: 'Exports & Rep Audit ★', icon: Download },
-  { href: '/commission-audit', label: 'Commission Audit ★', icon: DollarSign },
-  { href: '/hidden-listings', label: 'Hidden Listings ★', icon: ShieldAlert },
-  { href: '/sod-compare', label: 'SOD Compare ★', icon: GitCompare },
-  { href: '/source-drift', label: 'Source Drift ★', icon: GitBranch },
+  { href: '/owner', label: 'Owner View', icon: Crown },
+  { href: '/exports', label: 'Exports & Rep Audit', icon: Download },
   { href: '/oos', label: 'OOS Risk', icon: AlertTriangle },
   { href: '/opportunities', label: 'Opportunities', icon: Trophy },
   { href: '/activity', label: 'Activity Feed', icon: Zap },
@@ -82,7 +79,6 @@ const NAV_SECONDARY = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const [commissionUnlocked, setCommissionUnlocked] = useState(false);
 
   // Close mobile nav on route change
   useEffect(() => setOpen(false), [pathname]);
@@ -96,28 +92,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [open]);
 
-  // Re-read passcode-gate state on every route change so the link
-  // appears/disappears within the same session.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      setCommissionUnlocked(window.localStorage.getItem('commission_audit_unlocked') === '1');
-    } catch {
-      setCommissionUnlocked(false);
-    }
-  }, [pathname]);
-
-  // Filter NAV_SECONDARY to hide passcode-gated pages unless unlocked
-  const lockedRoutes = new Set([
-    '/commission-audit',
-    '/hidden-listings',
-    '/sod-compare',
-    '/exports',
-  ]);
-  const visibleSecondary = NAV_SECONDARY.filter((item) =>
-    lockedRoutes.has(item.href) ? commissionUnlocked : true,
-  );
-
   return (
     <div className="min-h-[100dvh] bg-brand-grad">
       {/* Always-on global search (Cmd+K) — renders the trigger inline + the modal portal-style */}
@@ -127,7 +101,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 h-14 border-b border-[var(--color-card-border)] bg-[rgba(10,12,16,0.8)] backdrop-blur safe-top">
         <Link href="/" className="flex items-center gap-2">
           <Logo />
-          <span className="font-semibold">Anu LCBO</span>
+          <span className="font-semibold">Dripp Tracker</span>
         </Link>
         <button
           aria-label="Open menu"
@@ -148,7 +122,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex items-center justify-between px-4 h-14 border-b border-[var(--color-card-border)]">
               <div className="flex items-center gap-2">
                 <Logo />
-                <span className="font-semibold">Anu LCBO</span>
+                <span className="font-semibold">Dripp Tracker</span>
               </div>
               <button
                 aria-label="Close menu"
@@ -165,7 +139,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="mt-4 mb-2 px-3 text-[10px] uppercase tracking-wider text-[var(--color-muted)] font-semibold">
                 More
               </div>
-              {visibleSecondary.map((item) => (
+              {NAV_SECONDARY.map((item) => (
                 <NavLink key={item.href} item={item} active={pathname === item.href} />
               ))}
             </div>
@@ -178,9 +152,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-3 px-5 h-16 border-b border-[var(--color-card-border)]">
           <Logo />
           <div>
-            <div className="text-sm font-semibold">Anu Spirits</div>
+            <div className="text-sm font-semibold">Dripp Tracker</div>
             <div className="text-[10px] text-[var(--color-muted)] uppercase tracking-wider">
-              LCBO Tracker Pro
+              Phoenix &amp; Dayaa at LCBO
             </div>
           </div>
         </div>
@@ -196,7 +170,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
         <div className="p-4 text-[10px] text-[var(--color-muted)] border-t border-[var(--color-card-border)]">
-          Anu Spirits · Tracker Pro
+          Dripp Tracker
         </div>
       </aside>
 
@@ -288,8 +262,8 @@ function NavLink({
 
 function Logo() {
   return (
-    <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[var(--color-accent)] to-[#b89060] flex items-center justify-center text-[10px] font-bold text-[#7a1717]">
-      ANU
+    <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[var(--color-accent)] to-[#b89060] flex items-center justify-center text-[9px] font-bold text-[#7a1717]">
+      DRIPP
     </div>
   );
 }

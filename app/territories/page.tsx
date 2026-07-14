@@ -5,17 +5,14 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Globe2, ChevronDown, ChevronRight, Users, Eye, AlertTriangle, PackageOpen } from 'lucide-react';
 import { api } from '@/lib/api';
-import { useActivePortfolio } from '@/lib/active-portfolio';
-import { PortfolioToggle } from '@/components/portfolio-toggle';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { formatNumber } from '@/lib/utils';
 
 export default function TerritoriesPage() {
-  const [portfolio] = useActivePortfolio();
   const territories = useQuery({ queryKey: ['territories'], queryFn: api.crmTerritories });
   const rollup = useQuery({
-    queryKey: ['territory-rollup', portfolio],
-    queryFn: () => api.territoryRollup(portfolio),
+    queryKey: ['territory-rollup'],
+    queryFn: () => api.territoryRollup(),
   });
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -35,16 +32,13 @@ export default function TerritoriesPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold flex items-center gap-2">
             <Globe2 size={24} className="text-[var(--color-accent)]" />
             Territories
-            <span className="text-xs font-normal text-muted ml-2">
-              ({portfolio === 'NB' ? 'NB Distillers' : portfolio === 'Anu' ? 'Anu Imports' : 'All portfolios'})
-            </span>
+            <span className="text-xs font-normal text-muted ml-2">(Phoenix &amp; Dayaa)</span>
           </h1>
           <p className="text-sm text-[var(--color-muted)]">
             Per-rep distribution + SKU drill-down on the latest SOD snapshot.
             Tap a rep card to expand the SKU breakdown.
           </p>
         </div>
-        <PortfolioToggle />
       </header>
 
       {/* Per-rep rollup: distribution + SKU drilldown */}

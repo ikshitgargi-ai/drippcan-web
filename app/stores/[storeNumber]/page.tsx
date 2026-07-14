@@ -17,9 +17,12 @@ import {
   Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { api, type DealStage } from '@/lib/api';
+import { api, type ReconcileRow } from '@/lib/api';
 import { useActiveRep } from '@/lib/active-rep';
+import { REP_ROSTER } from '@/lib/reps';
+import { TRACKED_SKUS } from '@/lib/skus';
 import { FreshnessBanner } from '@/components/freshness-banner';
+import { FlagChip } from '@/components/dripp-bits';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatNumber, formatDate, statusBadgeClass, statusLabel, relativeTime } from '@/lib/utils';
@@ -49,6 +52,13 @@ export default function StorePage({
     queryKey: ['deals', { store_number: n }],
     queryFn: () => api.deals({ store_number: n }),
   });
+  // 3-way mini-reconcile for THIS store — shares the /reconcile 30-day cache.
+  const reconcile = useQuery({
+    queryKey: ['reconcile', 30],
+    queryFn: () => api.reconcile(30),
+    retry: 1,
+  });
+  const miniRows = (reconcile.data?.rows ?? []).filter((r) => r.store_number === n);
 
   const pitchDeal = useMutation({
     mutationFn: (body: { sku: string; competitor_sku: string; notes: string }) =>
@@ -196,7 +206,12 @@ export default function StorePage({
               </div>
 
               {/* Inline-editable contact card — reps populate this during visits */}
-              <ContactCard storeId={s.id} initial={s} onSaved={() => full.refetch()} />
+              <ContactCard
+                storeId={s.id}
+                initial={s}
+                lastUpdated={full.data?.contacts_last_updated ?? null}
+                onSaved={() => full.refetch()}
+              />
             </div>
           )}
         </CardContent>
@@ -247,6 +262,12 @@ export default function StorePage({
       {/* Tab: Our SKUs */}
       {tab === 'overview' && (
         <div className="space-y-2.5">
+          {/* Mini reconcile: SOD vs lcbo.com vs rep-observed, side by side */}
+          <MiniReconcile
+            rows={miniRows}
+            loading={!reconcile.data && !reconcile.isError}
+          />
+
           {inv.isLoading &&
             Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton h-16" />)}
           {inv.data?.sod.map((s) => (
@@ -322,7 +343,7 @@ export default function StorePage({
 
           {/* "I saw it on shelf" — catches SOD undercounts so we get paid for
               every actual listing. Submitted observations feed the
-              /commission-audit reconciliation. */}
+              3-way reconciliation (SOD vs lcbo.com vs rep-observed). */}
           <div className="m-card border-[rgba(212,165,116,0.3)] bg-[rgba(212,165,116,0.04)]">
             <div className="flex items-start gap-3">
               <Eye size={18} className="text-[var(--color-accent)] shrink-0 mt-0.5" />
@@ -354,16 +375,7 @@ export default function StorePage({
                       className="select w-full"
                     >
                       <option value="">— pick a SKU —</option>
-                      {[
-                        { sku: '0020187', name: 'Red Admiral Vodka' },
-                        { sku: '0022246', name: 'Chak De Whisky' },
-                        { sku: '0046340', name: 'Goenchi Cashew Feni' },
-                        { sku: '0046343', name: 'Goenchi Coconut Feni' },
-                        { sku: '0046282', name: 'Fratelli Classic Shiraz' },
-                        { sku: '0046285', name: 'Fratelli Chenin Blanc' },
-                        { sku: '0046286', name: 'Fratelli Sauvignon Blanc' },
-                        { sku: '0046287', name: 'Fratelli Cabernet Sauvignon' },
-                      ].map((s) => (
+                      {TRACKED_SKUS.map((s) => (
                         <option key={s.sku} value={s.sku}>
                           {s.name}
                         </option>
@@ -589,9 +601,79 @@ export default function StorePage({
   );
 }
 
+/**
+ * Side-by-side SOD / lcbo.com / rep-observed counts for both SKUs at this
+ * store, with the reconciliation flag. Pulled from the same /api/reconcile
+ * payload the full board uses (30-day rep-observation window).
+ */
+function MiniReconcile({ rows, loading }: { rows: ReconcileRow[]; loading: boolean }) {
+  if (loading) return <div className="skeleton h-24" />;
+  if (rows.length === 0) return null;
+  return (
+    <div className="m-card">
+      <div className="text-sm font-semibold mb-2">Three sources, side by side</div>
+      <div className="space-y-2">
+        {rows.map((r) => (
+          <div
+            key={r.sku}
+            className="rounded-lg bg-[var(--color-background)] border border-[var(--color-card-border)] p-2.5"
+          >
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <div className="text-xs font-semibold">
+                {TRACKED_SKUS.find((s) => s.sku === r.sku)?.brand ?? r.sku}
+                <span className="text-muted font-normal font-mono ml-1.5">{r.sku}</span>
+              </div>
+              <FlagChip flag={r.flag} />
+            </div>
+            <div className="grid grid-cols-3 gap-1.5 text-center">
+              <div>
+                <div className="text-base font-bold tabular-nums">
+                  {r.sod_on_hand != null ? formatNumber(r.sod_on_hand) : '—'}
+                </div>
+                <div className="text-[10px] uppercase tracking-wider text-muted">SOD</div>
+                {r.sod_snapshot_date && (
+                  <div className="text-[10px] text-muted">{r.sod_snapshot_date}</div>
+                )}
+              </div>
+              <div>
+                <div className="text-base font-bold tabular-nums text-[var(--color-accent)]">
+                  {r.live_qty != null ? formatNumber(r.live_qty) : '—'}
+                </div>
+                <div className="text-[10px] uppercase tracking-wider text-muted">lcbo.com</div>
+                {r.live_checked_at && (
+                  <div className="text-[10px] text-muted">{relativeTime(r.live_checked_at)}</div>
+                )}
+              </div>
+              <div>
+                <div className="text-base font-bold tabular-nums">
+                  {r.rep_units != null
+                    ? formatNumber(r.rep_units)
+                    : r.rep_on_shelf === true
+                      ? 'on shelf'
+                      : r.rep_on_shelf === false
+                        ? '0'
+                        : '—'}
+                </div>
+                <div className="text-[10px] uppercase tracking-wider text-muted">rep saw</div>
+                {r.rep_observed_at && (
+                  <div className="text-[10px] text-muted">
+                    {relativeTime(r.rep_observed_at)}
+                    {r.rep ? ` · ${r.rep}` : ''}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ContactCard({
   storeId,
   initial,
+  lastUpdated,
   onSaved,
 }: {
   storeId: number;
@@ -606,6 +688,7 @@ function ContactCard({
     spirits_ambassador?: string;
     store_notes?: string;
   };
+  lastUpdated: { changed_by: string; changed_at: string; field?: string } | null;
   onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -677,6 +760,13 @@ function ContactCard({
               notes
             </div>
           )}
+          {lastUpdated && (
+            <div className="text-[10px] pt-1 text-muted">
+              Last updated by{' '}
+              <span className="text-[var(--color-foreground)]">{lastUpdated.changed_by}</span> on{' '}
+              {formatDate(lastUpdated.changed_at)}
+            </div>
+          )}
         </div>
         <button
           type="button"
@@ -741,7 +831,7 @@ function ContactCard({
           className="select"
         >
           <option value="">— Rep —</option>
-          {['Ikshit', 'Virat', 'Namit', 'Surya', 'Neeraj'].map((r) => (
+          {REP_ROSTER.map((r) => (
             <option key={r} value={r}>
               {r}
             </option>

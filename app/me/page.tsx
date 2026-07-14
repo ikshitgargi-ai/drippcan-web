@@ -20,8 +20,6 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useActiveRep } from '@/lib/active-rep';
-import { useActivePortfolio } from '@/lib/active-portfolio';
-import { PortfolioToggle } from '@/components/portfolio-toggle';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { formatNumber, relativeTime, statusBadgeClass, statusLabel } from '@/lib/utils';
 
@@ -34,12 +32,11 @@ import { formatNumber, relativeTime, statusBadgeClass, statusLabel } from '@/lib
  */
 export default function MePage() {
   const [activeRep, setActiveRep] = useActiveRep();
-  const [portfolio] = useActivePortfolio();
 
   const repsQuery = useQuery({ queryKey: ['reps'], queryFn: api.reps });
   const dash = useQuery({
-    queryKey: ['rep-dashboard', activeRep, portfolio],
-    queryFn: () => api.repDashboard(activeRep ?? '', portfolio),
+    queryKey: ['rep-dashboard', activeRep],
+    queryFn: () => api.repDashboard(activeRep ?? ''),
     enabled: !!activeRep,
   });
 
@@ -89,9 +86,7 @@ export default function MePage() {
             </h1>
             <p className="text-sm text-muted">
               {d?.my_store_count ?? '—'} assigned stores · {' '}
-              <span className="font-semibold">
-                Portfolio: {portfolio === 'NB' ? 'NB Distillers' : portfolio === 'Anu' ? 'Anu Imports' : 'All books'}
-              </span>{' '}
+              <span className="font-semibold">Phoenix &amp; Dayaa</span>{' '}
               · last refreshed {d?.as_of ? relativeTime(d.as_of) : '—'}
             </p>
           </div>
@@ -103,9 +98,6 @@ export default function MePage() {
             switch rep
           </button>
         </div>
-        {/* Portfolio toggle — NB by default for the rep team.
-            Anu/All hidden behind passcode (operator-only). */}
-        <PortfolioToggle />
       </header>
 
       {dash.isLoading && <div className="skeleton h-48" />}

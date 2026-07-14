@@ -8,12 +8,14 @@ import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 const ROUTES = [
+  { rep: 'Ikshit', label: 'Ikshit — GTA', emoji: '🏙️' },
+  { rep: 'Vaneet', label: 'Vaneet — GTA', emoji: '🏙️' },
+  { rep: 'Ed', label: 'Ed — GTA', emoji: '🏙️' },
   { rep: 'Namit', label: 'Namit — GTA', emoji: '🏙️' },
-  { rep: 'Surya', label: 'Surya — Ottawa', emoji: '🏛️' },
 ];
 
 export default function TerritoryPlanPage() {
-  const [rep, setRep] = useState('Namit');
+  const [rep, setRep] = useState('Ikshit');
   const [maxPerDay, setMaxPerDay] = useState(9);
   const plan = useQuery({
     queryKey: ['territory-plan', rep, maxPerDay],

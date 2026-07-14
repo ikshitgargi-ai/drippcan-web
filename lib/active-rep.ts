@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-const KEY = 'anu.activeRep';
+const KEY = 'dripp.activeRep';
 
 /**
  * Persist & retrieve the active rep across the app.

@@ -19,7 +19,7 @@ export default function BrandsIndexPage() {
         </div>
         <h1>Our Brands</h1>
         <p className="text-muted text-sm">
-          Live distribution health for every Anu brand we track. Tap a brand to drill into
+          Live distribution health for Phoenix &amp; Dayaa. Tap a brand to drill into
           per-SKU + per-store detail.
         </p>
       </header>

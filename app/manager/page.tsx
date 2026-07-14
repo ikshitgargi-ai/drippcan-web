@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, type ManagerRepRow, type ManagerTerritoryRow } from '@/lib/api';
+import { REP_ROSTER } from '@/lib/reps';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FreshnessBanner } from '@/components/freshness-banner';
@@ -36,7 +37,7 @@ type SortKey =
   | 'delistings_60d';
 
 /**
- * /manager — single command center for managers / Anu HQ.
+ * /manager — single command center for managers.
  * Mobile-first: KPI tiles top, scoreboard middle, territory builder + gap detail bottom.
  */
 export default function ManagerPage() {
@@ -473,7 +474,7 @@ function TerritoriesTab({
   const [draftRep, setDraftRep] = useState('');
 
   const roster = useQuery({ queryKey: ['roster'], queryFn: api.roster });
-  const officialRoster = roster.data?.roster ?? ['Ikshit', 'Virat', 'Namit', 'Surya', 'Neeraj'];
+  const officialRoster = roster.data?.roster ?? REP_ROSTER;
 
   // Picker shows the official roster + any rep currently in stores
   const allRepNames = Array.from(new Set([

@@ -15,7 +15,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
-      "connect-src 'self' https://lcbo-tracker.onrender.com https://lcbo.anu-spirits.com",
+      "connect-src 'self' http://localhost:5070 https://drippcan-tracker.onrender.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -23,9 +23,23 @@ const securityHeaders = [
   },
 ];
 
+// Same-origin proxy pattern: with NEXT_PUBLIC_API_BASE empty (.env.local),
+// the browser calls /api/* on this origin and Next rewrites to the backend —
+// localhost:5070 in dev, drippcan-tracker.onrender.com in prod.
+const BACKEND =
+  process.env.NODE_ENV === 'development'
+    ? 'http://localhost:5070'
+    : 'https://drippcan-tracker.onrender.com';
+
 const nextConfig: NextConfig = {
   async headers() {
     return [{ source: '/(.*)', headers: securityHeaders }];
+  },
+  async rewrites() {
+    return [
+      { source: '/api/:path*', destination: `${BACKEND}/api/:path*` },
+      { source: '/healthz', destination: `${BACKEND}/healthz` },
+    ];
   },
   poweredByHeader: false,
 };

@@ -27,7 +27,7 @@ import { FreshnessBanner } from '@/components/freshness-banner';
 export default function RoutePlannerPage() {
   const [city, setCity] = useState('');
   const [district, setDistrict] = useState('');
-  const [brand, setBrand] = useState<'all' | 'NB Distillers' | 'Anu Import'>('NB Distillers');
+  const [brand, setBrand] = useState<'all' | 'Phoenix' | 'Dayaa'>('all');
   const [maxSkus, setMaxSkus] = useState(1);
   const [maxStops, setMaxStops] = useState(8);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -196,9 +196,9 @@ export default function RoutePlannerPage() {
                 onChange={(e) => setBrand(e.target.value as typeof brand)}
                 className="select"
               >
-                <option value="NB Distillers">NB Distillers</option>
-                <option value="Anu Import">Anu Import</option>
                 <option value="all">All tracked</option>
+                <option value="Phoenix">Phoenix</option>
+                <option value="Dayaa">Dayaa</option>
               </select>
             </Field>
             <Field label="Max SKUs at store">

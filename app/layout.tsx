@@ -7,10 +7,10 @@ import { AppShell } from '@/components/app-shell';
 const inter = Inter({ subsets: ['latin'], variable: '--font-geist-sans' });
 
 export const metadata: Metadata = {
-  title: 'Anu Spirits — LCBO Tracker Pro',
-  description: 'Commercial-grade LCBO + HORECA CRM for Anu Spirits',
+  title: 'Dripp Tracker — Phoenix & Dayaa at LCBO',
+  description: 'Field sales tracker for Phoenix Ultra Smooth Vodka and Dayaa Arak at LCBO',
   appleWebApp: {
-    title: 'Anu LCBO',
+    title: 'Dripp Tracker',
     capable: true,
     statusBarStyle: 'black-translucent',
     startupImage: ['/apple-touch-icon.png'],

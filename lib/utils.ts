@@ -38,6 +38,18 @@ function parseAsUtc(d: string | Date): Date {
 
 export function formatDate(d: string | Date | null | undefined): string {
   if (!d) return '—';
+  // Pure calendar dates (SOD snapshot_date, change_date: "2026-07-13") have
+  // no time component — rendering them through a timezone shifts them back
+  // a day (UTC midnight = 8pm Toronto the evening BEFORE). Format them as
+  // the calendar date they already are.
+  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.trim())) {
+    const dt = new Date(d.trim() + 'T00:00:00Z');
+    if (isNaN(dt.getTime())) return String(d);
+    return dt.toLocaleDateString('en-CA', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      timeZone: 'UTC',
+    });
+  }
   const dt = parseAsUtc(d);
   if (isNaN(dt.getTime())) return String(d);
   return dt.toLocaleDateString('en-CA', {

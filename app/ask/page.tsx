@@ -8,11 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 
 const SAMPLE_QUESTIONS = [
-  'Summarize Red Admiral',
+  'Summarize Phoenix',
   'How is Namit doing?',
   'Portfolio summary',
-  'Top stores for Chak De',
-  'How many stores list Red Admiral in Toronto?',
+  'Top stores for Dayaa',
+  'How many stores list Phoenix in Toronto?',
   "What's delisting?",
   'Summarize store 217',
 ];
@@ -74,7 +74,7 @@ export default function AskPage() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="e.g. How many stores are delisting Red Admiral?"
+              placeholder="e.g. How many stores are delisting Phoenix?"
               className="select flex-1"
               maxLength={500}
               disabled={ask.isPending}

@@ -5,8 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Trophy, TrendingUp, Calendar, MapPin } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-
-const REPS = ['Ikshit', 'Virat', 'Namit', 'Surya', 'Neeraj'];
+import { REP_ROSTER as REPS } from '@/lib/reps';
 
 export default function RepPerformancePage() {
   const [days, setDays] = useState(30);

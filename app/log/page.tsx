@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { api, type ActivityCreate, type DealStage } from '@/lib/api';
 import { captureSilentGeo } from '@/lib/silent-geo';
 import { useActiveRep } from '@/lib/active-rep';
+import { REP_ROSTER } from '@/lib/reps';
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription,
 } from '@/components/ui/card';
@@ -158,9 +159,9 @@ function LogPageInner() {
               className="select"
             >
               <option value="">— pick rep —</option>
-              {/* Hardcoded official roster — was reading reps table which only
-                  contains reps who already logged activity (chicken-and-egg). */}
-              {['Ikshit', 'Virat', 'Namit', 'Surya', 'Neeraj'].map((r) => (
+              {/* Official roster (lib/reps) — the reps table only contains
+                  reps who already logged activity (chicken-and-egg). */}
+              {REP_ROSTER.map((r) => (
                 <option key={r} value={r}>
                   {r}
                 </option>

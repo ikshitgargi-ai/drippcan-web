@@ -2,8 +2,10 @@
  * API client for the Flask backend.
  *
  * Base URL:
- *   - Production: NEXT_PUBLIC_API_BASE (e.g. https://lcbo-tracker.onrender.com)
- *   - Dev: set in .env.local, defaults to https://lcbo-tracker.onrender.com
+ *   - Production: NEXT_PUBLIC_API_BASE (e.g. https://drippcan-tracker.onrender.com)
+ *   - Dev: set NEXT_PUBLIC_API_BASE empty in .env.local — same-origin, so
+ *     next.config.ts rewrites proxy /api/* to localhost:5070
+ *   - Unset entirely: falls back to https://drippcan-tracker.onrender.com
  *
  * All report endpoints return payloads with a `freshness` object:
  *   { latest_snapshot, snapshot_age_days, is_stale, last_run_age_hours }
@@ -11,9 +13,30 @@
  */
 
 export const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ?? 'https://lcbo-tracker.onrender.com';
+  process.env.NEXT_PUBLIC_API_BASE ?? 'https://drippcan-tracker.onrender.com';
 
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY ?? '';
+
+/**
+ * Owner-view options. When { owner: true }, the fetcher sends `X-View: owner`
+ * so the backend strips rep identity + internal notes server-side. The owner
+ * UI (/owner) passes this on EVERY call it makes. Anonymization is enforced
+ * by the backend — the header only selects the limited view.
+ */
+export interface ViewOpts {
+  owner?: boolean;
+}
+
+function viewHeaders(opts?: ViewOpts): Record<string, string> {
+  return opts?.owner ? { 'X-View': 'owner' } : {};
+}
+
+/** Append `view=owner` to a URL that is opened via <a href> (downloads),
+ *  where request headers can't be set. */
+function viewQuery(url: string, opts?: ViewOpts): string {
+  if (!opts?.owner) return url;
+  return url + (url.includes('?') ? '&' : '?') + 'view=owner';
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // For FormData (multipart) bodies, let the browser set Content-Type
@@ -69,7 +92,8 @@ export const api = {
   reportRep: () => request<RepReportPayload>(`/api/reports/rep`),
 
   // ===== CRM =====
-  crmDashboard: () => request<CrmDashboard>('/api/crm/dashboard'),
+  crmDashboard: (opts?: ViewOpts) =>
+    request<CrmDashboard>('/api/crm/dashboard', { headers: viewHeaders(opts) }),
   crmTerritories: () => request<Territory[]>('/api/crm/territories'),
   crmStores: (params: { territory_id?: number; with_coords_only?: boolean } = {}) => {
     const qs = new URLSearchParams();
@@ -78,13 +102,18 @@ export const api = {
     const s = qs.toString();
     return request<Store[]>(`/api/crm/stores${s ? `?${s}` : ''}`);
   },
-  oosRisk: (params: { sku?: string; territory_id?: number; threshold?: number } = {}) => {
+  oosRisk: (
+    params: { sku?: string; territory_id?: number; threshold?: number } = {},
+    opts?: ViewOpts,
+  ) => {
     const qs = new URLSearchParams();
     if (params.sku) qs.set('sku', params.sku);
     if (params.territory_id) qs.set('territory_id', String(params.territory_id));
     if (params.threshold != null) qs.set('threshold', String(params.threshold));
     const s = qs.toString();
-    return request<OosRiskRow[]>(`/api/crm/oos-risk${s ? `?${s}` : ''}`);
+    return request<OosRiskRow[]>(`/api/crm/oos-risk${s ? `?${s}` : ''}`, {
+      headers: viewHeaders(opts),
+    });
   },
   opportunities: (params: {
     sku?: string;
@@ -120,8 +149,10 @@ export const api = {
     request<StoreInventory>(`/api/crm/store/${storeNumber}/inventory`),
 
   // ===== Sprint 2: drill-down + comparison + GPS + AI =====
-  skuTrend: (sku: string, days = 90) =>
-    request<SkuTrend>(`/api/crm/sku-trend/${sku}?days=${days}`),
+  skuTrend: (sku: string, days = 90, opts?: ViewOpts) =>
+    request<SkuTrend>(`/api/crm/sku-trend/${sku}?days=${days}`, {
+      headers: viewHeaders(opts),
+    }),
   storeTrend: (storeNumber: number | string, days = 90) =>
     request<StoreTrend>(`/api/crm/store-trend/${storeNumber}?days=${days}`),
   wowDeltas: () => request<WowDeltasPayload>('/api/crm/wow-deltas'),
@@ -310,8 +341,10 @@ export const api = {
 
   // ===== Tracked products =====
   trackedProducts: () => request<ProductRow[]>('/api/products'),
+  // Backend param is `tracked_only` (default 1) — send it explicitly so
+  // sodProducts(false) actually returns the full catalog.
   sodProducts: (tracked = true) =>
-    request<SodProductsResponse>(`/api/sod/products${tracked ? '?tracked=1' : ''}`),
+    request<SodProductsResponse>(`/api/sod/products?tracked_only=${tracked ? '1' : '0'}`),
 
   // ===== System-of-action CRM (Sprint 3 backend) =====
   today: (rep: string, limit = 8) =>
@@ -410,8 +443,8 @@ export const api = {
       `/api/crm/resolve-store?q=${encodeURIComponent(q)}&limit=${limit}`,
     ),
 
-  // Portfolio discovery — NB Distillers vs Anu Imports SKU split.
-  // Drives the portfolio toggle so reps can flip view between books.
+  // Portfolio discovery — single 'Dripp' book (both SKUs). The backend
+  // returns all tracked SKUs for any portfolio value.
   portfolios: () =>
     request<{ portfolios: Array<{ key: string; label: string; sku_count: number;
               skus: Array<{ sku: string; brand: string; product_name: string }> }>;
@@ -419,22 +452,21 @@ export const api = {
 
   // Rep self-service dashboard — drives /me. One call returns this rep's
   // stats, recent activities, new listings, opportunities, my OOS/low.
-  // portfolio: 'NB' (default — rep team is NB-focused) | 'Anu' | 'all'.
-  repDashboard: (rep: string, portfolio: 'NB' | 'Anu' | 'all' = 'NB') =>
+  repDashboard: (rep: string, portfolio = 'all') =>
     request<RepDashboardPayload>(
       `/api/crm/rep-dashboard/${encodeURIComponent(rep)}?portfolio=${portfolio}`,
     ),
 
   // Territory rollup — per-rep distribution + per-SKU drilldown.
   // Powers /territories: pick a rep, see which SKUs are underdistributed.
-  territoryRollup: (portfolio: 'NB' | 'Anu' | 'all' = 'NB') =>
+  territoryRollup: (portfolio = 'all') =>
     request<TerritoryRollupPayload>(
       `/api/crm/territory-rollup?portfolio=${portfolio}`,
     ),
 
   // Morning digest — OOS + listed-but-low-stock (< 7 by default).
   // Same payload that is rendered to HTML and emailed by the cron.
-  morningDigest: (threshold = 7, portfolio: 'NB' | 'Anu' | 'all' = 'NB') =>
+  morningDigest: (threshold = 7, portfolio = 'all') =>
     request<MorningDigestPayload>(
       `/api/crm/morning-digest?threshold=${threshold}&portfolio=${portfolio}`,
     ),
@@ -450,7 +482,7 @@ export const api = {
     const s = qs.toString();
     return request<DailyLogPayload>(`/api/crm/daily-log${s ? `?${s}` : ''}`);
   },
-  // 14-day territory plan per rep (Namit/Surya)
+  // 14-day territory plan per rep
   territoryPlan: (rep: string, days = 14, max_per_day = 9) =>
     request<TerritoryPlanPayload>(`/api/crm/territory-plan?rep=${encodeURIComponent(rep)}&days=${days}&max_per_day=${max_per_day}`),
 
@@ -556,9 +588,103 @@ export const api = {
       { method: 'POST', body: JSON.stringify(body) },
     ),
 
-  // ===== NB Distillers premium tracker =====
-  nbTracker: () => request<NbTrackerPayload>('/api/crm/nb-tracker'),
-  anuImport: () => request<NbTrackerPayload>('/api/crm/anu-import'),
+  // ===== Territory (Dripp scoping — seeded routed + wider-GTA store book) =====
+  territory: (params: { tier?: string; city?: string; q?: string } = {}, opts?: ViewOpts) => {
+    const qs = new URLSearchParams();
+    if (params.tier) qs.set('tier', params.tier);
+    if (params.city) qs.set('city', params.city);
+    if (params.q) qs.set('q', params.q);
+    const s = qs.toString();
+    return request<TerritoryStoresPayload>(`/api/territory${s ? `?${s}` : ''}`, {
+      headers: viewHeaders(opts),
+    });
+  },
+  // GTA stores in the SOD/lcbo.com universe that are NOT yet in the territory
+  // book — candidates to add (keeps finding future new stores).
+  territoryDiscovery: () =>
+    request<TerritoryDiscoveryPayload>('/api/territory/discovery'),
+  territoryDiscoveryAdd: (store_number: number) =>
+    request<{ status: string; store_number: number; tier?: string }>(
+      '/api/territory/discovery/add',
+      { method: 'POST', body: JSON.stringify({ store_number }) },
+    ),
+
+  // ===== Live lcbo.com engine =====
+  liveLatest: (sku?: string, opts?: ViewOpts) =>
+    request<LiveLatestPayload>(`/api/live/latest${sku ? `?sku=${sku}` : ''}`, {
+      headers: viewHeaders(opts),
+    }),
+  // On-demand polite scrape of lcbo.com for both SKUs (2 per batch, 3s apart).
+  liveRefresh: () =>
+    request<LiveRefreshPayload>('/api/live/refresh', { method: 'POST' }),
+  liveStore: (storeNumber: number | string) =>
+    request<LiveStorePayload>(`/api/live/store/${storeNumber}`),
+
+  // ===== 3-way reconciliation: SOD vs lcbo.com vs rep-observed =====
+  reconcile: (days = 7, opts?: ViewOpts) =>
+    request<ReconcilePayload>(`/api/reconcile?days=${days}`, {
+      headers: viewHeaders(opts),
+    }),
+
+  // ===== Listings / delistings / restocks over X days (territory-tagged) =====
+  changes: (days = 7, sku?: string, opts?: ViewOpts) => {
+    const qs = new URLSearchParams();
+    qs.set('days', String(days));
+    if (sku) qs.set('sku', sku);
+    return request<ChangesPayload>(`/api/changes?${qs.toString()}`, {
+      headers: viewHeaders(opts),
+    });
+  },
+
+  // ===== Attribution + conversion (LAUNCH_DATE baseline 2026-07-15) =====
+  conversion: (days = 30, opts?: ViewOpts) =>
+    request<ConversionPayload>(`/api/conversion?days=${days}`, {
+      headers: viewHeaders(opts),
+    }),
+
+  // ===== Top-100 priority board =====
+  top100: (opts?: ViewOpts) =>
+    request<Top100Payload>('/api/top100', { headers: viewHeaders(opts) }),
+  top100Priority: (body: { store_number: number; rank: number }, opts?: ViewOpts) =>
+    request<{ status: string }>('/api/top100/priority', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: viewHeaders(opts),
+    }),
+  top100Status: (
+    body: { store_number: number; owner_status: OwnerStatus; note?: string },
+    opts?: ViewOpts,
+  ) =>
+    request<{ status: string }>('/api/top100/status', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: viewHeaders(opts),
+    }),
+  top100Funnel: (opts?: ViewOpts) =>
+    request<Top100FunnelPayload>('/api/top100/funnel', { headers: viewHeaders(opts) }),
+
+  // ===== Owner mode =====
+  // Server-side passcode check (OWNER_PASSCODE env on the backend). The
+  // passcode never lives in frontend code — only the ok/deny result does.
+  ownerCheck: (passcode: string) =>
+    request<{ ok: boolean }>('/api/owner/check', {
+      method: 'POST',
+      body: JSON.stringify({ passcode }),
+    }),
+
+  // ===== XLSX exports (openpyxl on the backend) =====
+  // URL builders for <a href> downloads — headers can't ride along, so the
+  // owner view is selected with ?view=owner instead.
+  exportTop100XlsxUrl: (opts?: ViewOpts) =>
+    viewQuery(`${API_BASE}/api/export/top100.xlsx`, opts),
+  exportTerritoryXlsxUrl: (opts?: ViewOpts) =>
+    viewQuery(`${API_BASE}/api/export/territory.xlsx`, opts),
+  exportChangesXlsxUrl: (days = 7, opts?: ViewOpts) =>
+    viewQuery(`${API_BASE}/api/export/changes.xlsx?days=${days}`, opts),
+  exportReconcileXlsxUrl: (opts?: ViewOpts) =>
+    viewQuery(`${API_BASE}/api/export/reconcile.xlsx`, opts),
+  exportVisitsXlsxUrl: (opts?: ViewOpts) =>
+    viewQuery(`${API_BASE}/api/export/visits.xlsx`, opts),
 
   // ===== Route planner =====
   cities: () => request<{ city: string; store_count: number }[]>('/api/crm/cities'),
@@ -894,9 +1020,21 @@ export interface ProductRow {
   lcbo_sku: string;
 }
 
+/** GET /api/sod/products → { count, rows } (see api_sod_products).
+ *  `products` is kept as a deprecated alias for older call sites. */
 export interface SodProductsResponse {
+  count: number;
+  rows: Array<{
+    sku: string;
+    product_name: string;
+    brand: string;
+    current_status?: string;
+    store_count?: number;
+    total_on_hand?: number;
+    is_tracked?: boolean | number;
+  }>;
+  /** @deprecated the backend never sends this — use `rows`. */
   products?: Array<{ sku: string; product_name: string; brand: string }>;
-  rows?: Array<{ sku: string; product_name: string; brand: string }>;
 }
 
 // Sprint 2 types
@@ -1802,6 +1940,12 @@ export interface StoreFullPayload {
     store_notes: string;
   };
   snapshot_date: string | null;
+  /** Latest contacts edit from territory_status_history — "last updated by X on date". */
+  contacts_last_updated?: {
+    changed_by: string;
+    changed_at: string;
+    field?: string;
+  } | null;
 }
 
 export interface ResolveStoreMatch {
@@ -2426,109 +2570,296 @@ export interface RoutePlannerPayload {
   freshness?: Freshness;
 }
 
-export interface NbTrackerPayload {
+// ===== Dripp territory / live / changes payloads =====
+
+export interface TerritoryStoreRow {
+  id: number;
+  store_number: number;
+  tier: 'routed' | 'territory' | 'discovered';
+  class: string;
+  account: string;
+  address: string;
+  city: string;
+  postal: string;
+  route_day: number | null;
+  route_stop: number | null;
+  priority_rank: number | null;
+  owner_status: 'none' | 'listing_received' | 'order_received' | 'completed';
+  owner_status_note: string;
+  owner_status_updated_at: string | null;
+  added_at: string | null;
+  source: 'seed' | 'discovery' | 'manual';
+  active: boolean;
+  /** Enriched from the master stores directory. */
+  lat?: number | null;
+  lng?: number | null;
+  phone?: string;
+  /** Latest SOD presence per tracked SKU, keyed by SKU; null = not listed. */
+  sku_presence?: Record<
+    string,
+    { status: string | null; on_hand: number | null; snapshot_date: string | null } | null
+  >;
+  last_touchpoint?: { activity_type: string; created_at: string | null; rep?: string } | null;
+}
+
+/** GET /api/territory → { count, stores, sod_latest } (see api_territory). */
+export interface TerritoryStoresPayload {
+  count: number;
+  stores: TerritoryStoreRow[];
+  /** Latest SOD snapshot date per tracked SKU. */
+  sod_latest: Record<string, string | null>;
+}
+
+export interface LiveLatestStoreRow {
+  store_number: number;
+  qty: number;
+  checked_at: string | null;
+  store_name: string;
+  city: string;
+}
+
+export interface LiveLatestSkuBlock {
   brand: string;
-  tagline: string;
-  skus: string[];
-  per_sku: Array<{
-    sku: string;
-    brand: string;
-    product_name: string;
-    lcbo_url: string;
-    snapshot_date: string | null;
-    listed: number;
-    delisting: number;
-    fully_delisted: number;
-    total_on_hand: number;
-    avg_on_hand_at_listed: number;
-  }>;
-  totals: {
-    total_skus: number;
-    total_listed_stores: number;
-    total_delisting_stores: number;
-    total_on_hand_units: number;
-    additions_60d: number;
-    delistings_60d: number;
-    oos_risk_count: number;
-    tasting_followups_count: number;
+  product_name: string;
+  batch_id: string | null;
+  checked_at: string | null;
+  store_count: number;
+  total_units: number;
+  stores: LiveLatestStoreRow[];
+}
+
+/** GET /api/live/latest → { skus: { [sku]: {...} } } (see api_live_latest). */
+export interface LiveLatestPayload {
+  skus: Record<string, LiveLatestSkuBlock>;
+}
+
+export type ChangeKind = 'new_listing' | 'delisting' | 'restock' | 'other';
+
+export interface ChangeRow {
+  source: 'sod' | 'live';
+  sku: string;
+  brand: string;
+  product_name: string;
+  store_number: number;
+  change_type: string;
+  kind: ChangeKind;
+  date: string;
+  old_status: string | null;
+  new_status: string | null;
+  old_qty: number | null;
+  new_qty: number | null;
+  detected_at: string | null;
+  in_territory: boolean;
+  tier?: string | null;
+  route_day?: number | null;
+  attribution: ConversionTag | null;
+}
+
+/** GET /api/changes → flat rows tagged with `kind` (see api_changes). */
+export interface ChangesPayload {
+  days: number;
+  since: string;
+  count: number;
+  rows: ChangeRow[];
+  summary: {
+    new_listings: number;
+    delistings: number;
+    restocks: number;
+    in_territory: number;
+    rep_converted: number;
+    organic: number;
+    baseline: number;
   };
-  top_stores: Array<{
-    store_number: number;
+}
+
+export type OwnerStatus = 'none' | 'listing_received' | 'order_received' | 'completed';
+
+export const OWNER_STATUSES: Array<{ key: OwnerStatus; label: string }> = [
+  { key: 'none', label: 'No status' },
+  { key: 'listing_received', label: 'Listing received' },
+  { key: 'order_received', label: 'Order received' },
+  { key: 'completed', label: 'Completed' },
+];
+
+export interface TerritoryDiscoveryCandidate {
+  store_number: number;
+  account: string;
+  address: string;
+  city: string;
+  postal: string;
+  /** Where the candidate was seen: 'stores_directory' and/or 'lcbo.com'. */
+  seen_in: string[];
+  /** Tracked SKUs this store already carries per the latest SOD view. */
+  carrying_skus: string[];
+}
+
+/** GET /api/territory/discovery → { count, candidates } (see api_territory_discovery). */
+export interface TerritoryDiscoveryPayload {
+  count: number;
+  candidates: TerritoryDiscoveryCandidate[];
+}
+
+/** POST /api/live/refresh → run_live_batch summary. status 'already_running'
+ *  comes back as HTTP 202 (still resolves); 'error' comes back 502 (throws). */
+export interface LiveRefreshPayload {
+  status: 'ok' | 'partial' | 'error' | 'already_running';
+  batch_id?: string;
+  triggered_by?: string;
+  skus?: string[];
+  row_count?: number;
+  store_count?: number;
+  events_created?: number;
+  errors?: string[];
+  error?: string | null;
+}
+
+/** GET /api/live/store/N → { store_number, days, count, series }. */
+export interface LiveStorePayload {
+  store_number: number;
+  days: number;
+  count: number;
+  series: Array<{
     sku: string;
-    product_name: string;
-    status: string;
-    on_hand: number;
-    account: string | null;
-    city: string | null;
-    territory_name: string;
-    territory_color: string;
+    qty: number;
+    checked_at: string;
+    batch_id: string | null;
+    brand: string;
   }>;
-  additions_60d: Array<{
-    sku: string;
-    product_name: string;
-    store_number: number;
-    change_date: string;
-    change_type: string;
-    account: string | null;
-    city: string | null;
-    territory_name: string;
-    territory_color: string;
-    current_on_hand: number;
-    current_status: string | null;
-  }>;
-  delistings_60d: Array<{
-    sku: string;
-    product_name: string;
-    store_number: number;
-    change_date: string;
-    change_type: string;
-    old_status: string | null;
-    new_status: string | null;
-    account: string | null;
-    city: string | null;
-    territory_name: string;
-    territory_color: string;
-  }>;
-  oos_risk: Array<{
-    sku: string;
-    product_name: string;
-    store_number: number;
-    on_hand: number;
-    severity: string;
-    account: string | null;
-    city: string | null;
-    territory_name: string;
-    territory_color: string;
-  }>;
-  tasting_followups: Array<{
-    sku: string;
-    product_name: string;
-    store_number: number;
-    tasting_date: string;
-    days_since_tasting: number | null;
-    tasting_outcome: string;
-    rep: string;
-    account: string | null;
-    city: string | null;
-    territory_name: string;
-    territory_color: string;
-    current_sod_status: string | null;
-  }>;
-  territory_coverage: Array<{
-    code: string;
-    name: string;
-    color: string;
-    nb_stores: number;
-    total_stores: number;
-    coverage_pct: number;
-  }>;
-  trend_30d: Array<{
-    date: string;
-    listed: number;
-    delisting: number;
-    total_on_hand: number;
-  }>;
-  freshness: Freshness;
+}
+
+export type ReconcileFlag =
+  | 'MATCH'
+  | 'SOD_LAGS_LIVE'
+  | 'LIVE_LAGS_SOD'
+  | 'REP_MISMATCH'
+  | 'MISSING_FROM_SOD'
+  | 'MISSING_FROM_LIVE';
+
+export interface ReconcileRow {
+  sku: string;
+  brand: string;
+  product_name: string;
+  store_number: number;
+  account: string;
+  city: string;
+  tier: string | null;
+  route_day: number | null;
+  sod_on_hand: number | null;
+  sod_status: string | null;
+  sod_snapshot_date: string | null;
+  live_qty: number | null;
+  live_checked_at: string | null;
+  rep_units: number | null;
+  rep_on_shelf: boolean | null;
+  rep_observed_at: string | null;
+  /** Rep name — stripped to "Rep" in owner view by the backend. */
+  rep: string | null;
+  delta_sod_live: number | null;
+  delta_rep_live: number | null;
+  flag: ReconcileFlag;
+}
+
+/** Per-SKU last-checked timestamps — surfaced so a diff is never silent. */
+export interface ReconcileSourceInfo {
+  sod_latest_snapshot: string | null;
+  live_batch_id: string | null;
+  live_checked_at: string | null;
+  rep_observation_window_days: number;
+}
+
+/** GET /api/reconcile → { days, rows, summary, sources } (see api_reconcile). */
+export interface ReconcilePayload {
+  days: number;
+  rows: ReconcileRow[];
+  summary: Partial<Record<ReconcileFlag, number>>;
+  sources?: Record<string, ReconcileSourceInfo>;
+  /** Present only when the territory book is empty. */
+  note?: string;
+}
+
+/** Listings on/before LAUNCH_DATE are 'baseline' (pre-field-work). */
+export type ConversionTag = 'baseline' | 'rep_converted' | 'organic';
+
+export interface ConversionPerStoreRow {
+  sku: string;
+  brand: string;
+  store_number: number;
+  account: string;
+  city: string;
+  tier: string | null;
+  in_territory: boolean;
+  listing_date: string;
+  source: 'sod' | 'live';
+  attribution: ConversionTag | null;
+  first_touch_date: string | null;
+  /** Rep name — becomes "Rep" in owner view (server-side). */
+  rep: string | null;
+  /** Owner-safe: "Rep visit on 2026-07-16" — internal view includes the name. */
+  touch_description: string | null;
+}
+
+/** GET /api/conversion → attribution scoreboard (see api_conversion). */
+export interface ConversionPayload {
+  days: number;
+  since: string;
+  launch_date: string;
+  touchpoints: number;
+  stores_touched: number;
+  new_listings: number;
+  rep_converted: number;
+  organic: number;
+  baseline: number;
+  /** Already a percentage (0-100), rounded to 1 decimal on the backend. */
+  conversion_rate: number;
+  per_store: ConversionPerStoreRow[];
+}
+
+/** Per-SKU cell on a top-100 row: SOD + live + conversion side by side. */
+export interface Top100SkuCell {
+  brand: string;
+  listed: boolean;
+  sod_status: string | null;
+  on_hand: number | null;
+  live_qty: number | null;
+  conversion: ConversionTag | null;
+}
+
+export interface Top100Row {
+  store_number: number;
+  priority_rank: number | null;
+  tier: 'routed' | 'territory' | 'discovered';
+  class?: string | null;
+  account?: string | null;
+  address?: string | null;
+  city?: string | null;
+  postal?: string | null;
+  route_day?: number | null;
+  route_stop?: number | null;
+  owner_status: OwnerStatus;
+  owner_status_note?: string;
+  owner_status_updated_at?: string | null;
+  /** Latest SOD presence + live qty per tracked SKU, keyed by SKU. */
+  skus?: Record<string, Top100SkuCell>;
+  last_touchpoint?: {
+    activity_type: string;
+    created_at: string | null;
+    rep?: string | null;
+  } | null;
+  conversion?: ConversionTag | null;
+}
+
+/** GET /api/top100 → { count, rows, owner_statuses } (see api_top100). */
+export interface Top100Payload {
+  count: number;
+  rows: Top100Row[];
+  owner_statuses: string[];
+}
+
+/** GET /api/top100/funnel → { board_size, funnel, order } (see api_top100_funnel). */
+export interface Top100FunnelPayload {
+  board_size: number;
+  funnel: Record<string, number>;
+  order: string[];
 }
 
 export interface ManagerDashboardPayload {
