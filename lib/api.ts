@@ -74,6 +74,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     fetch(`${API_BASE}${path}`, {
       ...init,
       headers,
+      // Never let the BROWSER's HTTP cache serve stale data: the backend sends
+      // Cache-Control public max-age on heavy GETs (good for its own in-process
+      // cache), but after a write (e.g. a top-100 priority move) a refetch could
+      // silently return the pre-write board for up to 60s. React-query is the
+      // only client cache we want; real-time boards depend on this.
+      cache: 'no-store',
     });
   let r = await doFetch();
   if (RETRYABLE_STATUS.includes(r.status) && isIdempotentGet(init)) {

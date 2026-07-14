@@ -188,10 +188,13 @@ function TrendSection() {
 }
 
 /* ===== OOS risk — stores about to run dry ===== */
+const OOS_THRESHOLDS = [0, 1, 2, 3, 5, 10] as const;
+
 function OosSection() {
+  const [threshold, setThreshold] = useState(2);
   const oos = useQuery({
-    queryKey: ['owner-oos'],
-    queryFn: () => api.oosRisk({}, OWNER),
+    queryKey: ['owner-oos', threshold],
+    queryFn: () => api.oosRisk({ threshold }, OWNER),
     retry: 1,
   });
 
@@ -203,6 +206,24 @@ function OosSection() {
         <AlertTriangle size={18} className="text-[var(--color-warning)]" />
         Out-of-stock risk
       </h2>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="text-[10px] uppercase tracking-wider text-muted font-medium">
+          Bottles at or below
+        </span>
+        {OOS_THRESHOLDS.map((t) => (
+          <button
+            key={t}
+            onClick={() => setThreshold(t)}
+            className={`change-chip min-h-8 px-3 tabular-nums ${
+              threshold === t
+                ? 'bg-[var(--color-accent)] text-[#2a1f0f] font-semibold'
+                : 'bg-[var(--color-card)] border border-[var(--color-card-border)]'
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
       {!oos.data && !oos.isError && <div className="skeleton h-16" />}
       {oos.isError && (
         <div className="m-card dense text-center text-muted text-xs py-4">
