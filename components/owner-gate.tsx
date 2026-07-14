@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Lock, Unlock } from 'lucide-react';
-import { api } from '@/lib/api';
 import { OWNER_UNLOCK_KEY, ownerLogout, setOwnerMode, useOwnerMode } from '@/lib/owner-mode';
 
 const STORAGE_KEY = OWNER_UNLOCK_KEY;
@@ -23,8 +22,6 @@ const STORAGE_KEY = OWNER_UNLOCK_KEY;
 export function OwnerGate({ children }: { children: React.ReactNode }) {
   const [unlocked, setUnlocked] = useState<boolean | null>(null);
   const [input, setInput] = useState('');
-  const [checking, setChecking] = useState(false);
-  const [error, setError] = useState('');
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -54,37 +51,21 @@ export function OwnerGate({ children }: { children: React.ReactNode }) {
     }
   }, [ownerMode, unlocked]);
 
-  async function submit() {
-    if (!input || checking) return;
-    setChecking(true);
-    setError('');
+  // No passcode: the owner just taps Enter. Owner mode is the RESTRICTED,
+  // server-anonymized view (no rep names, allowlisted endpoints only), so
+  // gating it behind a secret adds friction without protecting anything the
+  // internal view doesn't already expose. A rep who lands here can Log out
+  // to return to the full internal view.
+  function submit() {
     try {
-      const res = await api.ownerCheck(input);
-      if (res.ok) {
-        try {
-          window.localStorage.setItem(STORAGE_KEY, '1');
-        } catch {}
-        setOwnerMode(true);
-        // Drop anything an internal session may have cached — the owner
-        // session refetches everything with X-View: owner.
-        qc.clear();
-        setUnlocked(true);
-        setInput('');
-      } else {
-        setError('Wrong passcode.');
-        setInput('');
-      }
-    } catch (e) {
-      const msg = (e as Error).message || '';
-      if (msg.startsWith('401') || msg.startsWith('403')) {
-        setError('Wrong passcode.');
-      } else {
-        setError('Could not reach the server. Try again in a minute (free tier cold-starts).');
-      }
-      setInput('');
-    } finally {
-      setChecking(false);
-    }
+      window.localStorage.setItem(STORAGE_KEY, '1');
+    } catch {}
+    setOwnerMode(true);
+    // Drop anything an internal session may have cached — the owner
+    // session refetches everything with X-View: owner.
+    qc.clear();
+    setUnlocked(true);
+    setInput('');
   }
 
   function lock() {
@@ -110,35 +91,17 @@ export function OwnerGate({ children }: { children: React.ReactNode }) {
           <div>
             <div className="text-lg font-semibold">Owner Dashboard</div>
             <div className="text-xs text-muted mt-1">
-              Dripp Cann Spirits — Phoenix &amp; Dayaa at LCBO. Enter the owner
-              passcode to view inventory, listings and the top-100 board.
+              Dripp Cann Spirits — Phoenix &amp; Dayaa at LCBO. Inventory,
+              listings and your top-100 target board.
             </div>
           </div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              submit();
-            }}
-            className="space-y-2"
+          <button
+            type="button"
+            onClick={submit}
+            className="w-full bg-[var(--color-accent)] text-[#2a1f0f] rounded-lg py-2.5 font-semibold text-sm"
           >
-            <input
-              type="password"
-              autoFocus
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Owner passcode"
-              className="select w-full text-center text-lg tracking-widest font-mono"
-              aria-label="Owner passcode"
-            />
-            <button
-              type="submit"
-              disabled={checking || !input}
-              className="w-full bg-[var(--color-accent)] text-[#2a1f0f] rounded-lg py-2.5 font-semibold text-sm disabled:opacity-50"
-            >
-              {checking ? 'Checking…' : 'Unlock'}
-            </button>
-            {error && <div className="text-xs text-[var(--color-danger)]">{error}</div>}
-          </form>
+            Enter Owner Dashboard
+          </button>
         </div>
       </div>
     );
