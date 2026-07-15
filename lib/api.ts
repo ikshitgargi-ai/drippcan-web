@@ -761,6 +761,14 @@ export const api = {
   // owner view is selected with ?view=owner instead.
   exportTop100XlsxUrl: (opts?: ViewOpts) =>
     viewQuery(`${API_BASE}/api/export/top100.xlsx`, opts),
+
+  // ===== Anu Accounts — the permanent touched-store billing ledger =====
+  anuAccounts: (opts?: ViewOpts) =>
+    request<AnuAccountsPayload>('/api/anu-accounts', {
+      headers: viewHeaders(opts),
+    }),
+  exportAnuAccountsXlsxUrl: (opts?: ViewOpts) =>
+    viewQuery(`${API_BASE}/api/export/anu-accounts.xlsx`, opts),
   exportTerritoryXlsxUrl: (opts?: ViewOpts) =>
     viewQuery(`${API_BASE}/api/export/territory.xlsx`, opts),
   exportChangesXlsxUrl: (days = 7, opts?: ViewOpts) =>
@@ -3135,4 +3143,40 @@ export interface ManagerDashboardPayload {
     total_gap: number;
   };
   freshness: Freshness;
+}
+
+// ===== Anu Accounts payloads =====
+export interface AnuAccountListing {
+  sku: string;
+  brand: string;
+  source: string;
+  date: string;
+  classification: 'baseline' | 'billable' | 'listed_before_touch';
+}
+export interface AnuAccountRow {
+  store_number: number;
+  account_ref: string;
+  account: string;
+  city: string;
+  claimed_at: string;
+  first_touch_type: string;
+  touches: Record<string, number>;
+  touches_total: number;
+  last_touch: string;
+  reps: string[];
+  listings: AnuAccountListing[];
+  billable_listings: number;
+  owner_status: string;
+  owner_status_updated_at: string;
+  order_evidence: { order_activities: number; owner_status_order: boolean };
+}
+export interface AnuAccountsPayload {
+  launch_date: string;
+  summary: {
+    accounts: number;
+    billable_listings: number;
+    accounts_with_billable_listing: number;
+    accounts_with_order_evidence: number;
+  };
+  rows: AnuAccountRow[];
 }

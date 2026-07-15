@@ -32,6 +32,7 @@ import {
   ListOrdered,
   ClipboardList,
   LogOut,
+  BadgeCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ownerLogout, useOwnerMode } from '@/lib/owner-mode';
@@ -53,6 +54,7 @@ const NAV: NavItem[] = [
   { href: '/manager', label: 'Manager', icon: Trophy },
   // Drawer-only (after the 5-tab bar):
   { href: '/territory', label: 'Territory Book', icon: MapPin },
+  { href: '/accounts', label: 'Anu Accounts', icon: BadgeCheck },
   { href: '/top100', label: 'Top-100 Board', icon: ListOrdered },
   { href: '/reconcile', label: 'Reconcile (3-way)', icon: Scale },
   { href: '/listings', label: 'Listings (canonical)', icon: ClipboardList },
@@ -77,6 +79,7 @@ const NAV: NavItem[] = [
 // keeps the owner's phone from ever even asking for internal pages.
 const OWNER_NAV: NavItem[] = [
   { href: '/owner', label: 'Owner Dashboard', icon: Crown },
+  { href: '/accounts', label: 'Anu Accounts', icon: BadgeCheck },
   { href: '/top100', label: 'Top-100', icon: ListOrdered },
   { href: '/listings', label: 'Listings', icon: ClipboardList },
   { href: '/changes', label: 'Changes', icon: TrendingUp },
