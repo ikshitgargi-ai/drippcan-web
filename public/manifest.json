@@ -1,7 +1,7 @@
 {
-  "name": "Dripp Tracker",
-  "short_name": "Dripp Tracker",
-  "description": "Dripp Tracker: Phoenix & Dayaa at LCBO",
+  "name": "drippCAN",
+  "short_name": "drippCAN",
+  "description": "drippCAN: Phoenix & Dayaa at LCBO",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#060c18",

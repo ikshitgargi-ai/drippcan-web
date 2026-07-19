@@ -151,7 +151,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="text-lg font-semibold text-[var(--color-cream)]"
             style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.022em' }}
           >
-            <span className="text-[var(--color-primary)]">Dripp</span> Tracker
+            <span className="text-[var(--color-primary)]">dripp</span>CAN
           </span>
         </Link>
         <button
@@ -177,7 +177,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   className="text-lg font-semibold text-[var(--color-cream)]"
                   style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.022em' }}
                 >
-                  <span className="text-[var(--color-primary)]">Dripp</span> Tracker
+                  <span className="text-[var(--color-primary)]">dripp</span>CAN
                 </span>
               </div>
               <button
@@ -220,7 +220,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="text-lg font-semibold leading-tight text-[var(--color-cream)]"
               style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.022em' }}
             >
-              <span className="text-[var(--color-primary)]">Dripp</span> Tracker
+              <span className="text-[var(--color-primary)]">dripp</span>CAN
             </div>
             <div className="mt-1 mb-1 h-[2px] w-6 bg-[var(--color-gold-dim)]" />
             <div className="anu-label text-[10px]">Phoenix &amp; Dayaa at LCBO</div>
@@ -364,7 +364,7 @@ function Logo() {
     /* eslint-disable-next-line @next/next/no-img-element */
     <img
       src="/icon-192.png"
-      alt="Dripp Tracker"
+      alt="drippCAN"
       width={36}
       height={36}
       className="h-9 w-9 rounded-lg"

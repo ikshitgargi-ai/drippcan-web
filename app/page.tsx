@@ -88,7 +88,7 @@ export default function HomePage() {
         <div className="flex items-center gap-2">
           <span className="pulse-dot" />
           <span className="muted-small font-semibold uppercase tracking-wider">
-            Dripp Tracker
+            drippCAN
           </span>
         </div>
         <h1>Phoenix &amp; Dayaa at LCBO</h1>

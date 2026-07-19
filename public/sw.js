@@ -5,7 +5,7 @@
 
 // v2: owner-view requests bypass the cache entirely (cross-view isolation).
 // v3: navy+gold house theme, new icon set.
-const VERSION = 'dripp-tracker-v3';
+const VERSION = 'dripp-tracker-v4';
 
 self.addEventListener('install', (e) => {
   // Take over immediately, don't wait for old tabs to close

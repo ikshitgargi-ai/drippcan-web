@@ -14,10 +14,10 @@ const cormorant = Cormorant_Garamond({
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'Dripp Tracker | Phoenix & Dayaa at LCBO',
+  title: 'drippCAN | Phoenix & Dayaa at LCBO',
   description: 'Field sales tracker for Phoenix Ultra Smooth Vodka and Dayaa Arak at LCBO',
   appleWebApp: {
-    title: 'Dripp Tracker',
+    title: 'drippCAN',
     capable: true,
     statusBarStyle: 'black-translucent',
     startupImage: ['/apple-touch-icon.png'],
