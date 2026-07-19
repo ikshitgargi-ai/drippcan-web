@@ -93,7 +93,7 @@ export default function HomePage() {
         </div>
         <h1>Phoenix &amp; Dayaa at LCBO</h1>
         <p className="text-muted text-sm">
-          SOD + lcbo.com + rep observations, reconciled — nothing silently wrong or lost.
+          SOD + lcbo.com + rep observations, reconciled. Nothing silently wrong or lost.
         </p>
       </header>
 
@@ -120,15 +120,15 @@ export default function HomePage() {
                 <ChevronRight size={16} className="text-muted shrink-0" />
               </div>
               <div className="grid grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-[var(--color-card-border)]">
-                <KpiCell label="Stores (SOD)" value={r ? formatNumber(r.store_count) : '—'} />
+                <KpiCell label="Stores (SOD)" value={r ? formatNumber(r.store_count) : '·'} />
                 <KpiCell
                   label="On hand (SOD)"
-                  value={r ? formatNumber(r.total_on_hand) : '—'}
+                  value={r ? formatNumber(r.total_on_hand) : '·'}
                   color="var(--color-success)"
                 />
                 <KpiCell
                   label="Live (lcbo.com)"
-                  value={liveQty != null ? formatNumber(liveQty) : '—'}
+                  value={liveQty != null ? formatNumber(liveQty) : '·'}
                   color="var(--color-accent)"
                 />
               </div>
@@ -151,14 +151,14 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2.5">
-            <Stat label="Stores" value={territoryTotal != null ? formatNumber(territoryTotal) : '—'} />
-            <Stat label="Routed" value={byTier?.routed != null ? formatNumber(byTier.routed) : '—'} />
+            <Stat label="Stores" value={territoryTotal != null ? formatNumber(territoryTotal) : '·'} />
+            <Stat label="Routed" value={byTier?.routed != null ? formatNumber(byTier.routed) : '·'} />
             <Stat
               label="Wider GTA"
               value={
                 byTier
                   ? formatNumber((byTier.territory ?? 0) + (byTier.discovered ?? 0))
-                  : '—'
+                  : '·'
               }
             />
           </div>
@@ -178,7 +178,7 @@ export default function HomePage() {
               className="text-3xl font-bold mt-1.5 tabular-nums"
               style={{ color: 'var(--color-danger)' }}
             >
-              {oos.data ? oos.data.length : '—'}
+              {oos.data ? oos.data.length : '·'}
             </div>
             <div className="text-[10px] text-muted mt-0.5">stores at ≤2 units</div>
           </Link>
@@ -191,7 +191,7 @@ export default function HomePage() {
               className="text-3xl font-bold mt-1.5 tabular-nums"
               style={{ color: 'var(--color-success)' }}
             >
-              {digest.data ? newListings7d : '—'}
+              {digest.data ? newListings7d : '·'}
             </div>
             <div className="text-[10px] text-muted mt-0.5">incl. relistings</div>
           </Link>
@@ -457,8 +457,8 @@ function QuickLogSheet({
         <div
           className="mb-4 p-4 rounded-xl"
           style={{
-            background: rep ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.12)',
-            border: `2px solid ${rep ? 'rgba(34,197,94,0.4)' : 'rgba(245,158,11,0.5)'}`,
+            background: rep ? 'rgba(45,212,168,0.08)' : 'rgba(253,203,110,0.12)',
+            border: `2px solid ${rep ? 'rgba(45,212,168,0.4)' : 'rgba(253,203,110,0.5)'}`,
           }}
         >
           <label className="text-xs uppercase tracking-wider font-bold block mb-2"

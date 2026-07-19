@@ -115,7 +115,7 @@ export default function AskPage() {
                 <div className="text-sm text-[var(--color-danger)]">⚠ {t.error}</div>
               )}
               {t.answer && (
-                <div className="p-3 rounded-lg bg-[rgba(212,165,116,0.08)] border border-[rgba(212,165,116,0.3)] text-sm leading-relaxed">
+                <div className="p-3 rounded-lg bg-[rgba(216,173,88,0.08)] border border-[rgba(216,173,88,0.3)] text-sm leading-relaxed">
                   {t.answer}
                 </div>
               )}
@@ -124,7 +124,7 @@ export default function AskPage() {
                   <summary className="cursor-pointer text-[var(--color-muted)] hover:text-[var(--color-accent)]">
                     Show SQL
                   </summary>
-                  <pre className="mt-2 p-3 rounded-lg bg-[#0a0c10] border border-[var(--color-card-border)] overflow-x-auto font-mono text-[11px]">
+                  <pre className="mt-2 p-3 rounded-lg bg-[var(--color-background)] border border-[var(--color-card-border)] overflow-x-auto font-mono text-[11px]">
                     {t.sql}
                   </pre>
                 </details>

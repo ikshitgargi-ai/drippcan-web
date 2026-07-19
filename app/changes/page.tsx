@@ -53,7 +53,7 @@ export default function ChangesPage() {
         </div>
         <a
           href={api.exportChangesXlsxUrl(days, ownerMode ? { owner: true } : undefined)}
-          className="shrink-0 inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[#1a1f29]"
+          className="shrink-0 inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[var(--color-hover)]"
         >
           <Download size={14} />
           .xlsx
@@ -68,7 +68,7 @@ export default function ChangesPage() {
             onClick={() => setDays(d)}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
               days === d
-                ? 'bg-[var(--color-accent)] text-[#2a1f0f] border-[var(--color-accent)]'
+                ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)] border-[var(--color-accent)]'
                 : 'bg-[var(--color-card)] border-[var(--color-card-border)]'
             }`}
           >

@@ -11,14 +11,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { formatDate } from '@/lib/utils';
 
 const STAGES: { key: DealStage; label: string; color: string }[] = [
-  { key: 'prospecting', label: 'Prospecting', color: '#8b929e' },
-  { key: 'pitched', label: 'Pitched', color: '#74b9ff' },
-  { key: 'tasting_scheduled', label: 'Tasting Sched', color: '#a78bfa' },
-  { key: 'tasting_done', label: 'Tasted', color: '#f59e0b' },
+  { key: 'prospecting', label: 'Prospecting', color: '#9fa8bb' },
+  { key: 'pitched', label: 'Pitched', color: '#6da7ff' },
+  { key: 'tasting_scheduled', label: 'Tasting Sched', color: '#408eff' },
+  { key: 'tasting_done', label: 'Tasted', color: '#efd596' },
   { key: 'samples_left', label: 'Samples Left', color: '#fdcb6e' },
-  { key: 'in_review', label: 'In Review', color: '#d4a574' },
-  { key: 'listed', label: 'Listed (Won)', color: '#12c28c' },
-  { key: 'lost', label: 'Lost', color: '#ef4b4b' },
+  { key: 'in_review', label: 'In Review', color: '#d8ad58' },
+  { key: 'listed', label: 'Listed (Won)', color: '#2dd4a8' },
+  { key: 'lost', label: 'Lost', color: '#e5484d' },
 ];
 
 export default function PipelinePage() {
@@ -70,7 +70,7 @@ export default function PipelinePage() {
           disabled={!activeRep}
           className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium min-h-11 ${
             scopeMine && activeRep
-              ? 'bg-[var(--color-accent)] text-[#2a1f0f]'
+              ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)]'
               : 'bg-[var(--color-card)] border border-[var(--color-card-border)]'
           } ${!activeRep ? 'opacity-50' : ''}`}
         >
@@ -81,7 +81,7 @@ export default function PipelinePage() {
           onClick={() => setIncludeClosed((v) => !v)}
           className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium min-h-11 ${
             includeClosed
-              ? 'bg-[var(--color-accent)] text-[#2a1f0f]'
+              ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)]'
               : 'bg-[var(--color-card)] border border-[var(--color-card-border)]'
           }`}
         >
@@ -166,7 +166,7 @@ function DealCard({ deal, onMove }: { deal: Deal; onMove: (stage: DealStage) => 
         </Link>
         <span
           className="change-chip text-[10px]"
-          style={{ background: (stage?.color ?? '#888') + '33', color: stage?.color }}
+          style={{ background: (stage?.color ?? '#9fa8bb') + '33', color: stage?.color }}
         >
           {deal.probability}%
         </span>

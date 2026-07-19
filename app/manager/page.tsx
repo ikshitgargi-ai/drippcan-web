@@ -128,7 +128,7 @@ export default function ManagerPage() {
           label="Activities 30d"
           value={formatNumber(dash.data?.totals.total_activities_30d ?? 0)}
           icon={<ActivityIcon size={16} />}
-          color="#74b9ff"
+          color="#6da7ff"
         />
         <BigKpi
           label="New Stores 60d"
@@ -159,7 +159,7 @@ export default function ManagerPage() {
               onClick={() => setTab(t.key)}
               className={`shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-semibold min-h-11 ${
                 sel
-                  ? 'bg-[var(--color-accent)] text-[#2a1f0f]'
+                  ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)]'
                   : 'bg-[var(--color-card)] border border-[var(--color-card-border)]'
               }`}
             >
@@ -230,7 +230,7 @@ export default function ManagerPage() {
                                 r.pct_quota_activities >= 100
                                   ? 'var(--color-success)'
                                   : r.pct_quota_activities >= 75
-                                    ? '#a3d977'
+                                    ? '#4be0bb'
                                     : 'var(--color-warning)',
                             }}
                           >
@@ -448,7 +448,7 @@ function Row({
                 pct >= 100
                   ? 'var(--color-success)'
                   : pct >= 75
-                    ? '#a3d977'
+                    ? '#4be0bb'
                     : pct >= 50
                       ? 'var(--color-warning)'
                       : 'var(--color-danger)',

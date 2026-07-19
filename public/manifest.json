@@ -1,11 +1,11 @@
 {
   "name": "Dripp Tracker",
   "short_name": "Dripp Tracker",
-  "description": "Dripp Tracker — Phoenix & Dayaa at LCBO",
+  "description": "Dripp Tracker: Phoenix & Dayaa at LCBO",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0c10",
-  "theme_color": "#0a0c10",
+  "background_color": "#060c18",
+  "theme_color": "#060c18",
   "orientation": "portrait",
   "icons": [
     {

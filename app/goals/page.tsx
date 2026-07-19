@@ -111,11 +111,11 @@ function ProgressBar({
     pct >= 100
       ? 'var(--color-success)'
       : pct >= 75
-        ? '#a3d977'
+        ? '#4be0bb'
         : pct >= 50
           ? 'var(--color-warning)'
           : pct >= 25
-            ? '#e17055'
+            ? '#ff9a66'
             : 'var(--color-danger)';
   const clamped = Math.max(0, Math.min(100, pct));
   return (

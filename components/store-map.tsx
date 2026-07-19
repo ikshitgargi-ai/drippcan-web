@@ -52,7 +52,7 @@ export default function StoreMap({
         if (!s.lat || !s.lng) return;
         bounds.push([s.lat, s.lng]);
         const color =
-          colorBy === 'territory' ? s.territory_color || '#888' : '#d4a574';
+          colorBy === 'territory' ? s.territory_color || '#9fa8bb' : '#d8ad58';
         const popup = `
           <strong>#${s.store_number} — ${escapeHtml(s.account || '')}</strong><br/>
           ${escapeHtml(s.address || '')}<br/>

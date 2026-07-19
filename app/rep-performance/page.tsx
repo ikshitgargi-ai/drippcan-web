@@ -38,7 +38,7 @@ export default function RepPerformancePage() {
             onClick={() => setDays(d)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
               days === d
-                ? 'bg-[var(--color-accent)] text-[#2a1f0f]'
+                ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)]'
                 : 'bg-[var(--color-card)] border border-[var(--color-card-border)]'
             }`}
           >

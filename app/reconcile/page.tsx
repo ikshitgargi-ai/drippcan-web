@@ -115,7 +115,7 @@ export default function ReconcilePage() {
             <button
               onClick={() => refresh.mutate()}
               disabled={refresh.isPending}
-              className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-[var(--color-accent)] text-[#2a1f0f] text-xs font-semibold disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-[var(--color-accent)] text-[var(--color-primary-fg)] text-xs font-semibold disabled:opacity-50"
             >
               <RefreshCw size={14} className={refresh.isPending ? 'animate-spin' : ''} />
               {refresh.isPending ? 'Scraping…' : 'Refresh live'}
@@ -123,7 +123,7 @@ export default function ReconcilePage() {
           )}
           <a
             href={api.exportReconcileXlsxUrl(ownerMode ? { owner: true } : undefined)}
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[#1a1f29]"
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[var(--color-hover)]"
           >
             <Download size={14} />
             .xlsx
@@ -140,7 +140,7 @@ export default function ReconcilePage() {
             onClick={() => setDays(d)}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
               days === d
-                ? 'bg-[var(--color-accent)] text-[#2a1f0f] border-[var(--color-accent)]'
+                ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)] border-[var(--color-accent)]'
                 : 'bg-[var(--color-card)] border-[var(--color-card-border)]'
             }`}
           >
@@ -192,7 +192,7 @@ export default function ReconcilePage() {
           onClick={() => setFlagFilter('all')}
           className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border ${
             flagFilter === 'all'
-              ? 'bg-[var(--color-accent)] text-[#2a1f0f] border-[var(--color-accent)]'
+              ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)] border-[var(--color-accent)]'
               : 'bg-[var(--color-card)] border-[var(--color-card-border)]'
           }`}
         >

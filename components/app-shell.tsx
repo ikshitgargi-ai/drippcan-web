@@ -73,7 +73,7 @@ const NAV: NavItem[] = [
   { href: '/ask', label: 'Ask AI', icon: Sparkles },
 ];
 
-// OWNER SESSION LOCKDOWN — while ownerMode is set (owner passcode unlocked)
+// OWNER SESSION LOCKDOWN: while ownerMode is set (owner passcode unlocked)
 // the nav collapses to these four surfaces plus Logout, and every other
 // route redirects to /owner. The backend allowlist is the real lock; this
 // keeps the owner's phone from ever even asking for internal pages.
@@ -87,7 +87,7 @@ const OWNER_NAV: NavItem[] = [
 ];
 const OWNER_ALLOWED_ROUTES = OWNER_NAV.map((n) => n.href);
 
-// Secondary — only visible if explicitly opened (drawer "More" section)
+// Secondary: only visible if explicitly opened (drawer "More" section)
 const NAV_SECONDARY: NavItem[] = [
   { href: '/owner', label: 'Owner View', icon: Crown },
   { href: '/exports', label: 'Exports & Rep Audit', icon: Download },
@@ -139,20 +139,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] bg-brand-grad">
-      {/* Always-on global search (Cmd+K) — internal only; the owner session
+      {/* Always-on global search (Cmd+K), internal only; the owner session
           has no business searching stores or reps */}
       {!ownerMode && <CommandBar />}
 
       {/* Mobile top bar */}
-      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 h-14 border-b border-[var(--color-card-border)] bg-[rgba(10,12,16,0.8)] backdrop-blur safe-top">
+      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 h-14 border-b border-[var(--color-card-border)] bg-[rgba(6,12,24,0.8)] backdrop-blur safe-top">
         <Link href="/" className="flex items-center gap-2">
           <Logo />
-          <span className="font-semibold">Dripp Tracker</span>
+          <span
+            className="text-lg font-semibold text-[var(--color-cream)]"
+            style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.022em' }}
+          >
+            <span className="text-[var(--color-primary)]">Dripp</span> Tracker
+          </span>
         </Link>
         <button
           aria-label="Open menu"
           onClick={() => setOpen(!open)}
-          className="h-11 w-11 flex items-center justify-center rounded-lg hover:bg-[var(--color-card)]"
+          className="h-11 w-11 flex items-center justify-center rounded-lg hover:bg-[var(--color-hover)]"
         >
           {open ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -168,12 +173,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex items-center justify-between px-4 h-14 border-b border-[var(--color-card-border)]">
               <div className="flex items-center gap-2">
                 <Logo />
-                <span className="font-semibold">Dripp Tracker</span>
+                <span
+                  className="text-lg font-semibold text-[var(--color-cream)]"
+                  style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.022em' }}
+                >
+                  <span className="text-[var(--color-primary)]">Dripp</span> Tracker
+                </span>
               </div>
               <button
                 aria-label="Close menu"
                 onClick={() => setOpen(false)}
-                className="h-11 w-11 flex items-center justify-center rounded-lg hover:bg-[#1a1f29]"
+                className="h-11 w-11 flex items-center justify-center rounded-lg hover:bg-[var(--color-hover)]"
               >
                 <X size={20} />
               </button>
@@ -193,20 +203,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </>
               )}
               {ownerMode && <OwnerLogoutButton onClick={handleOwnerLogout} />}
+              <div className="anu-label pt-4 pb-2 px-3 text-[var(--color-dim)]">
+                operated by Anu Spirits
+              </div>
             </div>
           </nav>
         </div>
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex fixed inset-y-0 left-0 z-30 w-64 flex-col border-r border-[var(--color-card-border)] bg-[rgba(18,21,27,0.8)] backdrop-blur safe-top">
-        <div className="flex items-center gap-3 px-5 h-16 border-b border-[var(--color-card-border)]">
+      <aside className="hidden lg:flex fixed inset-y-0 left-0 z-30 w-64 flex-col border-r border-[var(--color-card-border)] bg-[rgba(11,20,36,0.8)] backdrop-blur safe-top">
+        <div className="flex items-center gap-3 px-5 py-3 border-b border-[var(--color-card-border)]">
           <Logo />
           <div>
-            <div className="text-sm font-semibold">Dripp Tracker</div>
-            <div className="text-[10px] text-[var(--color-muted)] uppercase tracking-wider">
-              Phoenix &amp; Dayaa at LCBO
+            <div
+              className="text-lg font-semibold leading-tight text-[var(--color-cream)]"
+              style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.022em' }}
+            >
+              <span className="text-[var(--color-primary)]">Dripp</span> Tracker
             </div>
+            <div className="mt-1 mb-1 h-[2px] w-6 bg-[var(--color-gold-dim)]" />
+            <div className="anu-label text-[10px]">Phoenix &amp; Dayaa at LCBO</div>
           </div>
         </div>
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
@@ -225,13 +242,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
           {ownerMode && <OwnerLogoutButton onClick={handleOwnerLogout} />}
         </nav>
-        <div className="p-4 text-[10px] text-[var(--color-muted)] border-t border-[var(--color-card-border)]">
-          Dripp Tracker
+        <div className="anu-label p-4 text-[10px] text-[var(--color-dim)] border-t border-[var(--color-card-border)]">
+          operated by Anu Spirits
         </div>
       </aside>
 
-      {/* Mobile bottom tab bar — always visible. Anchor tabs scroll instead of navigating. */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-[rgba(10,12,16,0.96)] backdrop-blur border-t border-[var(--color-card-border)] safe-bottom">
+      {/* Mobile bottom tab bar, always visible. Anchor tabs scroll instead of navigating. */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-[rgba(6,12,24,0.96)] backdrop-blur border-t border-[var(--color-card-border)] safe-bottom">
         <div className="flex items-stretch justify-around">
           {nav.slice(0, 5).map((item) => {
             const Icon = item.icon;
@@ -259,7 +276,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 onClick={handleClick}
                 className={cn(
                   'flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px]',
-                  active ? 'text-[var(--color-accent)]' : 'text-[var(--color-muted)]',
+                  active ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]',
                 )}
               >
                 <Icon size={20} />
@@ -279,10 +296,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      {/* Main content — with bottom padding for mobile tab bar */}
+      {/* Main content, with bottom padding for mobile tab bar */}
       <main className="lg:pl-64 min-h-[100dvh]">
         {/* Desktop top bar: search + ticker. Mobile already has its own header above */}
-        <div className="hidden lg:flex sticky top-0 z-20 items-center gap-3 px-6 h-14 bg-[rgba(10,12,16,0.85)] backdrop-blur border-b border-[var(--color-card-border)]">
+        <div className="hidden lg:flex sticky top-0 z-20 items-center gap-3 px-6 h-14 bg-[rgba(6,12,24,0.85)] backdrop-blur border-b border-[var(--color-card-border)]">
           <div className="flex-1">{!ownerMode && <CommandBar />}</div>
           <div className="flex items-center gap-2 text-xs text-[var(--color-muted)]">
             <span className="pulse-dot" />
@@ -295,7 +312,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 pb-24 lg:pb-6 max-w-[1400px] mx-auto">
           {ownerBlocked ? (
             <div className="py-16 text-center text-sm text-[var(--color-muted)]">
-              Owner view — taking you to the Owner Dashboard…
+              Owner view. Taking you to the Owner Dashboard…
             </div>
           ) : (
             children
@@ -310,7 +327,7 @@ function OwnerLogoutButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 h-11 px-3 rounded-lg text-sm text-[var(--color-foreground)] hover:bg-[#1a1f29] transition-colors"
+      className="w-full flex items-center gap-3 h-11 px-3 rounded-lg text-sm text-[var(--color-foreground)] hover:bg-[var(--color-hover)] transition-colors"
     >
       <LogOut size={18} className="text-[var(--color-muted)]" />
       Logout
@@ -332,11 +349,11 @@ function NavLink({
       className={cn(
         'flex items-center gap-3 h-11 px-3 rounded-lg text-sm transition-colors',
         active
-          ? 'bg-[var(--color-primary)] text-white'
-          : 'text-[var(--color-foreground)] hover:bg-[#1a1f29]',
+          ? 'bg-[rgba(216,173,88,0.08)] text-[var(--color-primary)] lg:rounded-l-none lg:border-l-2 lg:border-[var(--color-primary)]'
+          : 'text-[var(--color-foreground)] hover:bg-[var(--color-hover)]',
       )}
     >
-      <Icon size={18} className={active ? 'text-white' : 'text-[var(--color-muted)]'} />
+      <Icon size={18} className={active ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'} />
       {item.label}
     </Link>
   );
@@ -344,8 +361,13 @@ function NavLink({
 
 function Logo() {
   return (
-    <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[var(--color-accent)] to-[#b89060] flex items-center justify-center text-[9px] font-bold text-[#7a1717]">
-      DRIPP
-    </div>
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src="/icon-192.png"
+      alt="Dripp Tracker"
+      width={36}
+      height={36}
+      className="h-9 w-9 rounded-lg"
+    />
   );
 }

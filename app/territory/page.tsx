@@ -77,7 +77,7 @@ export default function TerritoryPage() {
         </div>
         <a
           href={api.exportTerritoryXlsxUrl()}
-          className="shrink-0 inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[#1a1f29]"
+          className="shrink-0 inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[var(--color-hover)]"
         >
           <Download size={14} />
           .xlsx
@@ -96,7 +96,7 @@ export default function TerritoryPage() {
               onClick={() => setTier(t)}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                 sel
-                  ? 'bg-[var(--color-accent)] text-[#2a1f0f] border-[var(--color-accent)]'
+                  ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)] border-[var(--color-accent)]'
                   : 'bg-[var(--color-card)] border-[var(--color-card-border)]'
               }`}
             >
@@ -263,7 +263,7 @@ function DiscoveryCard() {
   const candidates = discovery.data?.candidates ?? [];
 
   return (
-    <Card className="border-[rgba(18,194,140,0.25)]">
+    <Card className="border-[rgba(45,212,168,0.25)]">
       <CardHeader className="cursor-pointer" onClick={() => setOpen(!open)}>
         <div className="flex items-center justify-between gap-2">
           <div>
@@ -316,7 +316,7 @@ function DiscoveryCard() {
               <button
                 onClick={() => add.mutate(c.store_number)}
                 disabled={add.isPending}
-                className="shrink-0 inline-flex items-center gap-1 !min-h-0 h-9 px-3 rounded-lg bg-[var(--color-success)] text-[#06281c] text-xs font-semibold disabled:opacity-50"
+                className="shrink-0 inline-flex items-center gap-1 !min-h-0 h-9 px-3 rounded-lg bg-[var(--color-success)] text-[var(--color-primary-fg)] text-xs font-semibold disabled:opacity-50"
               >
                 <Plus size={13} />
                 Add

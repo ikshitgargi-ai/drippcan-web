@@ -236,7 +236,7 @@ export function CommandBar() {
 
 function TypeIcon({ type }: { type: Result['type'] }) {
   if (type === 'store') return <StoreIcon size={14} className="text-[var(--color-accent)]" />;
-  if (type === 'brand') return <Tag size={14} className="text-[#74b9ff]" />;
-  if (type === 'sku') return <Package size={14} className="text-[#a78bfa]" />;
+  if (type === 'brand') return <Tag size={14} className="text-[var(--color-data-soft)]" />;
+  if (type === 'sku') return <Package size={14} className="text-[var(--color-data)]" />;
   return <MapPin size={14} className="text-[var(--color-muted)]" />;
 }

@@ -34,7 +34,7 @@ export class ErrorBoundary extends Component<
     if (this.props.fallback) return this.props.fallback;
     return (
       <div className="max-w-lg mx-auto py-12 px-4">
-        <div className="m-card border-[rgba(239,75,75,0.4)] bg-[rgba(239,75,75,0.04)] space-y-3">
+        <div className="m-card border-[rgba(229,72,77,0.4)] bg-[rgba(229,72,77,0.04)] space-y-3">
           <div className="flex items-start gap-3">
             <AlertTriangle
               size={20}
@@ -50,7 +50,7 @@ export class ErrorBoundary extends Component<
                 <summary className="cursor-pointer hover:text-[var(--color-foreground)]">
                   Show error
                 </summary>
-                <pre className="mt-1 p-2 rounded bg-[#0a0c10] overflow-auto whitespace-pre-wrap break-all">
+                <pre className="mt-1 p-2 rounded bg-[var(--color-background)] overflow-auto whitespace-pre-wrap break-all">
                   {this.state.error?.message ?? 'Unknown error'}
                 </pre>
               </details>
@@ -59,7 +59,7 @@ export class ErrorBoundary extends Component<
           <div className="flex gap-2">
             <button
               onClick={this.reset}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-accent)] text-[#2a1f0f] text-sm font-semibold"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-accent)] text-[var(--color-primary-fg)] text-sm font-semibold"
             >
               <RefreshCw size={14} />
               Try again

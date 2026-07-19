@@ -228,7 +228,7 @@ function LogPageInner() {
                   onClick={() => setActivityType(t.key)}
                   className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border min-h-[88px] ${
                     sel
-                      ? 'border-[var(--color-accent)] bg-[rgba(212,165,116,0.08)]'
+                      ? 'border-[var(--color-accent)] bg-[rgba(216,173,88,0.08)]'
                       : 'border-[var(--color-card-border)] bg-[var(--color-card)]'
                   }`}
                 >
@@ -335,7 +335,7 @@ function LogPageInner() {
                     onClick={() => setRating(n)}
                     className={`flex-1 h-11 rounded-lg font-semibold ${
                       rating >= n
-                        ? 'bg-[var(--color-accent)] text-[#2a1f0f]'
+                        ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)]'
                         : 'bg-[var(--color-card)] border border-[var(--color-card-border)]'
                     }`}
                   >

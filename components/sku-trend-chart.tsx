@@ -11,6 +11,15 @@ import {
   Legend,
 } from 'recharts';
 import type { SkuTrend } from '@/lib/api';
+import {
+  CHART_SERIES,
+  CHART_GRID,
+  CHART_TICK,
+  CHART_LABEL,
+  CHART_TOOLTIP_BG,
+  CHART_TOOLTIP_BORDER,
+  STATUS,
+} from '@/lib/chart-colors';
 
 /**
  * Stacked-area chart of listed / delisting / fully-delisted store counts over time.
@@ -33,40 +42,40 @@ export function SkuTrendChart({ trend }: { trend: SkuTrend | undefined }) {
         <AreaChart data={trend.series} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
           <defs>
             <linearGradient id="listedGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#00b894" stopOpacity={0.7} />
-              <stop offset="95%" stopColor="#00b894" stopOpacity={0.05} />
+              <stop offset="5%" stopColor={STATUS.listed} stopOpacity={0.7} />
+              <stop offset="95%" stopColor={STATUS.listed} stopOpacity={0.05} />
             </linearGradient>
             <linearGradient id="delGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#fdcb6e" stopOpacity={0.7} />
-              <stop offset="95%" stopColor="#fdcb6e" stopOpacity={0.05} />
+              <stop offset="5%" stopColor={STATUS.delisting} stopOpacity={0.7} />
+              <stop offset="95%" stopColor={STATUS.delisting} stopOpacity={0.05} />
             </linearGradient>
             <linearGradient id="fullDelGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#e74c3c" stopOpacity={0.7} />
-              <stop offset="95%" stopColor="#e74c3c" stopOpacity={0.05} />
+              <stop offset="5%" stopColor={STATUS.delisted} stopOpacity={0.7} />
+              <stop offset="95%" stopColor={STATUS.delisted} stopOpacity={0.05} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1f2430" />
+          <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
           <XAxis
             dataKey="date"
-            tick={{ fill: '#7a818c', fontSize: 11 }}
+            tick={{ fill: CHART_TICK, fontSize: 11 }}
             tickFormatter={(d) => d.slice(5)}
           />
-          <YAxis tick={{ fill: '#7a818c', fontSize: 11 }} />
+          <YAxis tick={{ fill: CHART_TICK, fontSize: 11 }} />
           <Tooltip
             contentStyle={{
-              background: '#12151b',
-              border: '1px solid #1f2430',
+              background: CHART_TOOLTIP_BG,
+              border: `1px solid ${CHART_TOOLTIP_BORDER}`,
               borderRadius: 8,
               fontSize: 12,
             }}
-            labelStyle={{ color: '#e6e8eb' }}
+            labelStyle={{ color: CHART_LABEL }}
           />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           <Area
             type="monotone"
             dataKey="listed"
             stackId="1"
-            stroke="#00b894"
+            stroke={STATUS.listed}
             fill="url(#listedGrad)"
             name="Listed"
           />
@@ -74,7 +83,7 @@ export function SkuTrendChart({ trend }: { trend: SkuTrend | undefined }) {
             type="monotone"
             dataKey="delisting"
             stackId="1"
-            stroke="#fdcb6e"
+            stroke={STATUS.delisting}
             fill="url(#delGrad)"
             name="Delisting"
           />
@@ -82,7 +91,7 @@ export function SkuTrendChart({ trend }: { trend: SkuTrend | undefined }) {
             type="monotone"
             dataKey="fully_delisted"
             stackId="1"
-            stroke="#e74c3c"
+            stroke={STATUS.delisted}
             fill="url(#fullDelGrad)"
             name="Fully delisted"
           />
@@ -100,21 +109,21 @@ export function SkuStockChart({ trend }: { trend: SkuTrend | undefined }) {
         <AreaChart data={trend.series} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
           <defs>
             <linearGradient id="ohGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#d4a574" stopOpacity={0.6} />
-              <stop offset="95%" stopColor="#d4a574" stopOpacity={0.05} />
+              <stop offset="5%" stopColor={CHART_SERIES[0]} stopOpacity={0.6} />
+              <stop offset="95%" stopColor={CHART_SERIES[0]} stopOpacity={0.05} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1f2430" />
+          <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
           <XAxis
             dataKey="date"
-            tick={{ fill: '#7a818c', fontSize: 11 }}
+            tick={{ fill: CHART_TICK, fontSize: 11 }}
             tickFormatter={(d) => d.slice(5)}
           />
-          <YAxis tick={{ fill: '#7a818c', fontSize: 11 }} />
+          <YAxis tick={{ fill: CHART_TICK, fontSize: 11 }} />
           <Tooltip
             contentStyle={{
-              background: '#12151b',
-              border: '1px solid #1f2430',
+              background: CHART_TOOLTIP_BG,
+              border: `1px solid ${CHART_TOOLTIP_BORDER}`,
               borderRadius: 8,
               fontSize: 12,
             }}
@@ -122,7 +131,7 @@ export function SkuStockChart({ trend }: { trend: SkuTrend | undefined }) {
           <Area
             type="monotone"
             dataKey="total_on_hand"
-            stroke="#d4a574"
+            stroke={CHART_SERIES[0]}
             fill="url(#ohGrad)"
             name="Total on-hand"
           />

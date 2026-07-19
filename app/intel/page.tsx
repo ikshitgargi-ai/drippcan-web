@@ -123,7 +123,7 @@ export default function IntelPage() {
           [
             { key: 'new_stores' as Tab, label: 'New Stores', icon: TrendingUp, color: 'var(--color-success)' },
             { key: 'new_inventory' as Tab, label: 'New Inventory', icon: Package, color: 'var(--color-accent)' },
-            { key: 'lcbo_live' as Tab, label: 'LCBO Live', icon: Radar, color: '#a78bfa' },
+            { key: 'lcbo_live' as Tab, label: 'LCBO Live', icon: Radar, color: '#408eff' },
             { key: 'delisted' as Tab, label: 'Delisted', icon: TrendingDown, color: 'var(--color-danger)' },
             { key: 'flips' as Tab, label: 'Flips', icon: ArrowLeftRight, color: 'var(--color-warning)' },
           ] as const
@@ -136,7 +136,7 @@ export default function IntelPage() {
               onClick={() => setTab(t.key)}
               className={`shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-semibold min-h-11 ${
                 sel
-                  ? 'bg-[var(--color-accent)] text-[#2a1f0f]'
+                  ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)]'
                   : 'bg-[var(--color-card)] border border-[var(--color-card-border)]'
               }`}
             >
@@ -319,7 +319,7 @@ export default function IntelPage() {
                           <span
                             className="change-chip"
                             style={{
-                              background: 'rgba(212,165,116,0.18)',
+                              background: 'rgba(216,173,88,0.18)',
                               color: 'var(--color-accent)',
                             }}
                           >
@@ -364,8 +364,8 @@ export default function IntelPage() {
       {/* TAB: LCBO LIVE — discoveries from lcbo.com that SOD doesn't show */}
       {tab === 'lcbo_live' && (
         <>
-          <div className="m-card flex items-start gap-3 border-[#a78bfa]/40 bg-[rgba(167,139,250,0.05)]">
-            <Radar size={18} className="text-[#a78bfa] shrink-0 mt-0.5" />
+          <div className="m-card flex items-start gap-3 border-[rgba(64,142,255,0.4)] bg-[rgba(64,142,255,0.05)]">
+            <Radar size={18} className="text-[var(--color-data)] shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0 text-xs">
               <div className="font-semibold mb-0.5">Dual-source reconciliation</div>
               <div className="text-muted">
@@ -377,7 +377,7 @@ export default function IntelPage() {
             <button
               onClick={() => rescan.mutate()}
               disabled={rescan.isPending}
-              className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[#a78bfa] text-white text-xs font-semibold disabled:opacity-50"
+              className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-data)] text-white text-xs font-semibold disabled:opacity-50"
             >
               <RefreshCw size={12} className={rescan.isPending ? 'animate-spin' : ''} />
               {rescan.isPending ? 'Scanning…' : 'Rescan now'}
@@ -414,8 +414,8 @@ export default function IntelPage() {
                           <span
                             className="change-chip"
                             style={{
-                              background: 'rgba(167,139,250,0.18)',
-                              color: '#a78bfa',
+                              background: 'rgba(64,142,255,0.18)',
+                              color: '#408eff',
                             }}
                           >
                             <Radar size={11} className="inline mr-1" />

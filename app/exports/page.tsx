@@ -114,7 +114,7 @@ function ExportsInner() {
               href={exportUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[var(--color-accent)] text-[#2a1f0f] text-sm font-semibold"
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[var(--color-accent)] text-[var(--color-primary-fg)] text-sm font-semibold"
             >
               <Download size={14} />
               Download ZIP
@@ -129,11 +129,11 @@ function ExportsInner() {
               Or grab the legacy JSON dump
             </a>
           </div>
-          <div className="m-card flex items-start gap-3 border-[rgba(212,165,116,0.3)] bg-[rgba(212,165,116,0.06)]">
+          <div className="m-card flex items-start gap-3 border-[rgba(216,173,88,0.3)] bg-[rgba(216,173,88,0.06)]">
             <Sparkles size={16} className="text-[var(--color-accent)] shrink-0 mt-0.5" />
             <div className="text-xs text-muted">
               <strong>Suggested AI prompt</strong> (paste the ZIP into ChatGPT/Claude):
-              <pre className="bg-[#0a0c10] p-3 rounded mt-2 text-[11px] whitespace-pre-wrap">
+              <pre className="bg-[var(--color-background)] p-3 rounded mt-2 text-[11px] whitespace-pre-wrap">
 {`Using activities.csv and stores.csv, for each rep compute:
 - total visits in last 30 days
 - unique stores
@@ -181,7 +181,7 @@ Return a markdown table sorted by total visits descending.`}
         <CardContent className="space-y-4">
           {/* Global findings */}
           {behavior.data?.global_findings && behavior.data.global_findings.length > 0 && (
-            <div className="m-card border-[rgba(212,165,116,0.3)] bg-[rgba(212,165,116,0.06)]">
+            <div className="m-card border-[rgba(216,173,88,0.3)] bg-[rgba(216,173,88,0.06)]">
               <div className="flex items-start gap-2">
                 <AlertTriangle
                   size={14}
@@ -253,7 +253,7 @@ Return a markdown table sorted by total visits descending.`}
                               key={f}
                               className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
                                 f === 'stale' || f === 'no_conversion'
-                                  ? 'bg-[rgba(239,75,75,0.12)] text-[var(--color-danger)]'
+                                  ? 'bg-[rgba(229,72,77,0.12)] text-[var(--color-danger)]'
                                   : 'bg-[rgba(253,203,110,0.12)] text-[var(--color-warning)]'
                               }`}
                             >
@@ -286,7 +286,7 @@ Return a markdown table sorted by total visits descending.`}
                         <Link
                           key={s.store_number}
                           href={`/stores/${s.store_number}`}
-                          className="text-xs px-2 py-1 rounded bg-[rgba(253,203,110,0.10)] text-[var(--color-warning)] hover:bg-[var(--color-warning)] hover:text-[#2a1f0f]"
+                          className="text-xs px-2 py-1 rounded bg-[rgba(253,203,110,0.10)] text-[var(--color-warning)] hover:bg-[var(--color-warning)] hover:text-[var(--color-primary-fg)]"
                           title={`${s.account ?? ''} · ${s.city ?? ''} · last visit ${s.last_visit ?? '—'}`}
                         >
                           #{s.store_number}{' '}
@@ -328,7 +328,7 @@ Return a markdown table sorted by total visits descending.`}
             <Link
               key={l.href}
               href={l.href}
-              className="flex items-start gap-3 p-3 rounded-lg border border-[var(--color-card-border)] hover:border-[var(--color-accent)] hover:bg-[rgba(212,165,116,0.04)]"
+              className="flex items-start gap-3 p-3 rounded-lg border border-[var(--color-card-border)] hover:border-[var(--color-accent)] hover:bg-[rgba(216,173,88,0.04)]"
             >
               <ActivityIcon size={14} className="text-[var(--color-accent)] shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
@@ -467,7 +467,7 @@ function RepActivityReportCard() {
             href={csvUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-accent)] text-[#2a1f0f] text-sm font-semibold"
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-accent)] text-[var(--color-primary-fg)] text-sm font-semibold"
           >
             <Download size={14} />
             Download CSV

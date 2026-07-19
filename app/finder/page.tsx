@@ -240,7 +240,7 @@ function StoreRow({ s }: { s: FinderStore }) {
             <span className="text-[10px] text-[var(--color-muted)]">· {s.rep}</span>
           )}
           {s.open_deals > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(212,165,116,0.15)] text-[var(--color-accent)] flex items-center gap-1">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(216,173,88,0.15)] text-[var(--color-accent)] flex items-center gap-1">
               <Briefcase size={9} />
               {s.open_deals} open
             </span>

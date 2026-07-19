@@ -192,7 +192,7 @@ export default function NearbyPage() {
             </div>
           )}
           {error && (
-            <div className="mt-2 p-3 rounded-lg bg-[rgba(239,75,75,0.06)] border border-[rgba(239,75,75,0.3)] text-sm">
+            <div className="mt-2 p-3 rounded-lg bg-[rgba(229,72,77,0.06)] border border-[rgba(229,72,77,0.3)] text-sm">
               <div className="font-semibold text-[var(--color-danger)] mb-1">{error}</div>
               <div className="text-xs text-muted">
                 Pick a city above to use the fallback. On iPhone, you can also enable

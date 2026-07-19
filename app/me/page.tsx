@@ -375,7 +375,7 @@ function StatCard({
     <div
       className={`rounded-lg border p-2.5 ${
         highlight
-          ? 'border-[rgba(212,165,116,0.4)] bg-[rgba(212,165,116,0.08)]'
+          ? 'border-[rgba(216,173,88,0.4)] bg-[rgba(216,173,88,0.08)]'
           : 'border-[var(--color-card-border)] bg-[rgba(255,255,255,0.02)]'
       }`}
     >

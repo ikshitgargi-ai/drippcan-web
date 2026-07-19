@@ -12,7 +12,7 @@ const STORAGE_KEY = OWNER_UNLOCK_KEY;
  *
  * Same UX pattern as the old passcode gate (localStorage persistence, lock
  * button), but the passcode is checked SERVER-SIDE against the backend's
- * OWNER_PASSCODE env via POST /api/owner/check — the code never ships in
+ * OWNER_PASSCODE env via POST /api/owner/check, so the code never ships in
  * frontend JS. This is a convenience gate for the brand owner; the real
  * protection is server-side anonymization on every X-View: owner response.
  *
@@ -61,7 +61,7 @@ export function OwnerGate({ children }: { children: React.ReactNode }) {
       window.localStorage.setItem(STORAGE_KEY, '1');
     } catch {}
     setOwnerMode(true);
-    // Drop anything an internal session may have cached — the owner
+    // Drop anything an internal session may have cached; the owner
     // session refetches everything with X-View: owner.
     qc.clear();
     setUnlocked(true);
@@ -82,23 +82,23 @@ export function OwnerGate({ children }: { children: React.ReactNode }) {
   if (!unlocked) {
     return (
       <div className="max-w-sm mx-auto py-12">
-        <div className="m-card text-center space-y-4 border-[rgba(212,165,116,0.3)]">
+        <div className="m-card text-center space-y-4 border-[rgba(216,173,88,0.3)]">
           <div className="flex justify-center">
-            <div className="w-12 h-12 rounded-full bg-[rgba(212,165,116,0.08)] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-[rgba(216,173,88,0.08)] flex items-center justify-center">
               <Lock size={20} className="text-[var(--color-accent)]" />
             </div>
           </div>
           <div>
             <div className="text-lg font-semibold">Owner Dashboard</div>
             <div className="text-xs text-muted mt-1">
-              Dripp Cann Spirits — Phoenix &amp; Dayaa at LCBO. Inventory,
+              Dripp Cann Spirits. Phoenix &amp; Dayaa at LCBO. Inventory,
               listings and your top-100 target board.
             </div>
           </div>
           <button
             type="button"
             onClick={submit}
-            className="w-full bg-[var(--color-accent)] text-[#2a1f0f] rounded-lg py-2.5 font-semibold text-sm"
+            className="w-full bg-[var(--color-accent)] text-[var(--color-primary-fg)] rounded-lg py-2.5 font-semibold text-sm"
           >
             Enter Owner Dashboard
           </button>

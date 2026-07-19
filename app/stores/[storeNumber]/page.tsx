@@ -237,7 +237,7 @@ export default function StorePage({
               onClick={() => setTab(t.key)}
               className={`shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-semibold min-h-11 ${
                 sel
-                  ? 'bg-[var(--color-accent)] text-[#2a1f0f]'
+                  ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)]'
                   : 'bg-[var(--color-card)] border border-[var(--color-card-border)]'
               }`}
             >
@@ -344,7 +344,7 @@ export default function StorePage({
           {/* "I saw it on shelf" — catches SOD undercounts so we get paid for
               every actual listing. Submitted observations feed the
               3-way reconciliation (SOD vs lcbo.com vs rep-observed). */}
-          <div className="m-card border-[rgba(212,165,116,0.3)] bg-[rgba(212,165,116,0.04)]">
+          <div className="m-card border-[rgba(216,173,88,0.3)] bg-[rgba(216,173,88,0.04)]">
             <div className="flex items-start gap-3">
               <Eye size={18} className="text-[var(--color-accent)] shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
@@ -363,7 +363,7 @@ export default function StorePage({
                       }
                       setShowObserveForm(true);
                     }}
-                    className="mt-2 inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-accent)] text-[#2a1f0f] text-sm font-semibold"
+                    className="mt-2 inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-accent)] text-[var(--color-primary-fg)] text-sm font-semibold"
                   >
                     <Plus size={14} /> I saw it on shelf
                   </button>
@@ -491,7 +491,7 @@ export default function StorePage({
                                   : 'var(--color-muted)',
                             background:
                               t.opportunity_score >= 50
-                                ? 'rgba(239,75,75,0.15)'
+                                ? 'rgba(229,72,77,0.15)'
                                 : t.opportunity_score >= 25
                                   ? 'rgba(253,203,110,0.15)'
                                   : 'rgba(255,255,255,0.06)',
@@ -861,7 +861,7 @@ function ContactCard({
           type="button"
           onClick={save}
           disabled={saving}
-          className="flex-1 bg-[var(--color-accent)] text-[#2a1f0f] rounded-lg py-2 font-semibold text-sm disabled:opacity-50"
+          className="flex-1 bg-[var(--color-accent)] text-[var(--color-primary-fg)] rounded-lg py-2 font-semibold text-sm disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>

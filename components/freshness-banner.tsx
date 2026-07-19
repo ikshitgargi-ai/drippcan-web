@@ -99,9 +99,9 @@ function Banner({
   compact?: boolean;
 }) {
   const colors = {
-    success: 'bg-[rgba(0,184,148,0.08)] border-[rgba(0,184,148,0.3)] text-[#1ecc9e]',
-    warn: 'bg-[rgba(253,203,110,0.08)] border-[rgba(253,203,110,0.3)] text-[#fdd680]',
-    danger: 'bg-[rgba(231,76,60,0.08)] border-[rgba(231,76,60,0.3)] text-[#ff7a6c]',
+    success: 'bg-[rgba(45,212,168,0.08)] border-[rgba(45,212,168,0.3)] text-[#4be0bb]',
+    warn: 'bg-[rgba(253,203,110,0.08)] border-[rgba(253,203,110,0.3)] text-[#ffd780]',
+    danger: 'bg-[rgba(229,72,77,0.08)] border-[rgba(229,72,77,0.3)] text-[#ff8a80]',
   }[tone];
 
   return (

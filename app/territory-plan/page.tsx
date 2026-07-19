@@ -59,7 +59,7 @@ export default function TerritoryPlanPage() {
             onClick={() => setRep(r.rep)}
             className={`px-4 py-2 rounded-lg font-semibold text-sm ${
               rep === r.rep
-                ? 'bg-[var(--color-accent)] text-[#2a1f0f]'
+                ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)]'
                 : 'bg-[var(--color-card)] border border-[var(--color-card-border)]'
             }`}
           >
@@ -119,7 +119,7 @@ export default function TerritoryPlanPage() {
                       href={mapsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-2 rounded-lg bg-[var(--color-accent)] text-[#2a1f0f] text-xs font-semibold flex items-center gap-1"
+                      className="px-3 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-primary-fg)] text-xs font-semibold flex items-center gap-1"
                     >
                       <Navigation size={12} /> Open all stops in Google Maps
                     </a>

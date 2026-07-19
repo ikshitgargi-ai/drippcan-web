@@ -39,7 +39,7 @@ export default function ActivityFeedPage() {
           onClick={() => setScope('team')}
           className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium min-h-11 ${
             scope === 'team'
-              ? 'bg-[var(--color-accent)] text-[#2a1f0f]'
+              ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)]'
               : 'bg-[var(--color-card)] border border-[var(--color-card-border)]'
           }`}
         >
@@ -50,7 +50,7 @@ export default function ActivityFeedPage() {
           disabled={!activeRep}
           className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium min-h-11 ${
             scope === 'me' && activeRep
-              ? 'bg-[var(--color-accent)] text-[#2a1f0f]'
+              ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)]'
               : 'bg-[var(--color-card)] border border-[var(--color-card-border)]'
           } ${!activeRep ? 'opacity-50' : ''}`}
         >

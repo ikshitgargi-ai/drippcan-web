@@ -49,7 +49,7 @@ export function MovementCard({
               onClick={() => setDays(d)}
               className={`px-2 py-1 rounded ${
                 days === d
-                  ? 'bg-[var(--color-accent)] text-[#2a1f0f] font-semibold'
+                  ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)] font-semibold'
                   : 'text-muted hover:text-[var(--color-foreground)]'
               }`}
             >
@@ -91,7 +91,7 @@ export function MovementCard({
       {/* Source-drift hint badge if any disagreements */}
       {m && (m.store_universe.carrying_only_lcbo ?? 0) + (m.store_universe.carrying_only_sod ?? 0) > 0 && (
         <div
-          className="px-4 py-2 text-xs border-t border-[var(--color-card-border)] bg-[rgba(212,165,116,0.04)] flex items-center gap-2"
+          className="px-4 py-2 text-xs border-t border-[var(--color-card-border)] bg-[rgba(216,173,88,0.04)] flex items-center gap-2"
         >
           <GitBranch size={12} className="text-[var(--color-accent)]" />
           <span className="flex-1">

@@ -1,21 +1,45 @@
+/* Anu Spirits canonical globals.css for the Next.js apps (Tailwind v4).
+   Per APP_UI_SPEC.md. Class names intentionally match the previous stylesheet so the
+   theme swap requires no component renames. Per-app extras are appended below the
+   marked line, never above it. layout.tsx must load Outfit and Cormorant Garamond via
+   next/font/google with css variables --font-outfit and --font-cormorant. */
+
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #0a0c10;
-  --color-foreground: #eef0f3;
-  --color-card: #141821;
-  --color-card-border: #242a36;
-  --color-muted: #8b929e;
-  --color-muted-fg: #a7aeb9;
-  --color-primary: #b22222;
-  --color-primary-fg: #ffffff;
-  --color-accent: #d4a574;
-  --color-success: #12c28c;
+  /* deep navy ramp (site-matched) */
+  --color-background: #060c18;
+  --color-foreground: #e6ecf5;
+  --color-card: #101c33;
+  --color-card-border: rgba(216, 173, 88, 0.13);
+  --color-hairline: rgba(159, 168, 187, 0.14);
+  --color-raise: #0b1424;
+  --color-hover: #172642;
+  --color-active: #1e3154;
+
+  --color-muted: #9fa8bb;
+  --color-muted-fg: #a9b3c7;
+  --color-dim: #6b7691;
+
+  /* gold is the primary action color of the house */
+  --color-primary: #d8ad58;
+  --color-primary-fg: #0b1424;
+  --color-accent: #efd596;
+  --color-gold-dim: #a48246;
+  --color-cream: #f3eccf;
+
+  --color-data: #408eff;
+  --color-data-soft: #6da7ff;
+  --color-wine: #9c2848;
+
+  --color-success: #2dd4a8;
   --color-warning: #fdcb6e;
-  --color-danger: #ef4b4b;
-  --color-ring: #d4a574;
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+  --color-danger: #e5484d;
+  --color-ring: #d8ad58;
+
+  --font-sans: var(--font-outfit), -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-cormorant), Georgia, serif;
+  --font-mono: ui-monospace, "SF Mono", monospace;
 }
 
 *,
@@ -44,27 +68,51 @@ body {
 
 body { font-size: 0.9375rem; }  /* 15px base */
 
-/* Larger text where it matters on mobile */
-h1 { font-size: 1.5rem; line-height: 1.2; font-weight: 700; }
-h2 { font-size: 1.25rem; line-height: 1.3; font-weight: 600; }
+/* Display headings carry the house serif; h3 and below stay in Outfit for legibility */
+h1, h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.022em;
+  color: var(--color-cream);
+}
+h1 { font-size: 1.75rem; line-height: 1.15; font-weight: 600; }
+h2 { font-size: 1.375rem; line-height: 1.25; font-weight: 600; }
 h3 { font-size: 1.0625rem; line-height: 1.35; font-weight: 600; }
 @media (min-width: 640px) {
-  h1 { font-size: 1.875rem; }
-  h2 { font-size: 1.5rem; }
+  h1 { font-size: 2.25rem; }
+  h2 { font-size: 1.625rem; }
   h3 { font-size: 1.125rem; }
+}
+
+/* the house label pattern: nav items, eyebrows, table headers, tab labels */
+.anu-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--color-muted);
+}
+.anu-label.is-active { color: var(--color-primary); }
+
+/* display numerals for KPI cards */
+.anu-stat {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  color: var(--color-cream);
+  font-variant-numeric: lining-nums;
 }
 
 .bg-brand-grad {
   background:
-    radial-gradient(1000px 500px at 20% -10%, rgba(212, 165, 116, 0.09) 0%, transparent 60%),
-    radial-gradient(1000px 500px at 100% 120%, rgba(178, 34, 34, 0.08) 0%, transparent 60%),
+    radial-gradient(1000px 520px at 18% -10%, rgba(216, 173, 88, 0.07) 0%, transparent 60%),
+    radial-gradient(1000px 520px at 100% 120%, rgba(64, 142, 255, 0.05) 0%, transparent 60%),
     var(--color-background);
 }
 
 .text-brand { color: var(--color-primary); }
 .text-accent { color: var(--color-accent); }
 
-/* Status badges — bigger, more readable on mobile */
+/* Status badges (tint recipe: 15% bg, 28% border, lightened text) */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -77,11 +125,11 @@ h3 { font-size: 1.0625rem; line-height: 1.35; font-weight: 600; }
   white-space: nowrap;
   line-height: 1.4;
 }
-.badge-listed    { background: rgba(18,194,140,0.15); color: #22d79b; border: 1px solid rgba(18,194,140,0.28); }
+.badge-listed    { background: rgba(45,212,168,0.15); color: #4be0bb; border: 1px solid rgba(45,212,168,0.28); }
 .badge-delisting { background: rgba(253,203,110,0.15); color: #ffd780; border: 1px solid rgba(253,203,110,0.28); }
-.badge-delisted  { background: rgba(239,75,75,0.15); color: #ff8a80; border: 1px solid rgba(239,75,75,0.28); }
-.badge-stale     { background: rgba(239,75,75,0.15); color: #ff8a80; border: 1px solid rgba(239,75,75,0.28); }
-.badge-fresh     { background: rgba(18,194,140,0.15); color: #22d79b; border: 1px solid rgba(18,194,140,0.28); }
+.badge-delisted  { background: rgba(229,72,77,0.15); color: #ff8a80; border: 1px solid rgba(229,72,77,0.28); }
+.badge-stale     { background: rgba(229,72,77,0.15); color: #ff8a80; border: 1px solid rgba(229,72,77,0.28); }
+.badge-fresh     { background: rgba(45,212,168,0.15); color: #4be0bb; border: 1px solid rgba(45,212,168,0.28); }
 .badge-neutral   { background: rgba(255,255,255,0.04); color: var(--color-muted); border: 1px solid rgba(255,255,255,0.06); }
 
 .sev-critical { color: #ff6766; }
@@ -98,20 +146,21 @@ h3 { font-size: 1.0625rem; line-height: 1.35; font-weight: 600; }
   padding: 0.75rem 0.875rem;
   text-align: left;
   font-size: 0.875rem;
-  border-bottom: 1px solid var(--color-card-border);
+  border-bottom: 1px solid var(--color-hairline);
 }
+.data-table td { font-variant-numeric: tabular-nums; }
 .data-table thead th {
   font-size: 0.6875rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.09em;
   color: var(--color-muted);
   font-weight: 600;
-  background: rgba(255,255,255,0.02);
+  background: rgba(11, 20, 36, 0.85);
   position: sticky;
   top: 0;
   z-index: 1;
 }
-.data-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+.data-table tbody tr:hover { background: rgba(216, 173, 88, 0.04); }
 
 /* TOUCH TARGETS: minimum 44x44 */
 button,
@@ -120,6 +169,12 @@ a.btn,
 input[type="button"],
 input[type="submit"] {
   min-height: 44px;
+}
+
+/* focus visibility, gold ring */
+:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
 }
 
 .recharts-surface { overflow: visible; }
@@ -187,9 +242,9 @@ input[type="submit"] {
 .select {
   min-height: 44px;
   padding: 0.625rem 0.75rem;
-  background: var(--color-background);
+  background: var(--color-raise);
   color: var(--color-foreground);
-  border: 1px solid var(--color-card-border);
+  border: 1px solid var(--color-hairline);
   border-radius: 0.625rem;
   font-size: 1rem;  /* 16px prevents iOS zoom on focus */
   width: 100%;
@@ -197,8 +252,8 @@ input[type="submit"] {
   transition: border-color 150ms, box-shadow 150ms;
 }
 .select:focus {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.18);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(216, 173, 88, 0.18);
 }
 
 /* ============ MOBILE LIST ITEM (for feeds / cards) ============ */
@@ -227,13 +282,13 @@ input[type="submit"] {
   height: 8px;
   border-radius: 50%;
   background: var(--color-success);
-  box-shadow: 0 0 0 0 rgba(18, 194, 140, 0.7);
+  box-shadow: 0 0 0 0 rgba(45, 212, 168, 0.7);
   animation: pulse 2s infinite;
 }
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(18, 194, 140, 0.7); }
-  70% { box-shadow: 0 0 0 8px rgba(18, 194, 140, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(18, 194, 140, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(45, 212, 168, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(45, 212, 168, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(45, 212, 168, 0); }
 }
 
 /* Change-type chips */
@@ -248,17 +303,17 @@ input[type="submit"] {
   border-radius: 9999px;
   white-space: nowrap;
 }
-.change-NEW_LISTING  { background: rgba(18,194,140,0.15); color: #22d79b; }
-.change-RELISTED     { background: rgba(18,194,140,0.15); color: #22d79b; }
-.change-DELISTED     { background: rgba(239,75,75,0.15); color: #ff8a80; }
+.change-NEW_LISTING  { background: rgba(45,212,168,0.15); color: #4be0bb; }
+.change-RELISTED     { background: rgba(45,212,168,0.15); color: #4be0bb; }
+.change-DELISTED     { background: rgba(229,72,77,0.15); color: #ff8a80; }
 .change-STATUS_FLIP  { background: rgba(253,203,110,0.15); color: #ffd780; }
-.change-BASELINE     { background: rgba(212,165,116,0.15); color: #e5c09a; }
+.change-BASELINE     { background: rgba(216,173,88,0.15); color: #e8c98d; }
 
 /* Sticky bottom CTA bar (mobile log-visit etc.) */
 .mobile-cta-bar {
   position: fixed;
   left: 0; right: 0; bottom: 0;
-  background: rgba(10, 12, 16, 0.92);
+  background: rgba(6, 12, 24, 0.92);
   backdrop-filter: blur(8px);
   border-top: 1px solid var(--color-card-border);
   padding: 0.75rem 1rem;
@@ -282,7 +337,7 @@ input[type="submit"] {
   animation-play-state: paused;
 }
 
-/* Palantir-density mode: tighter padding, more info */
+/* Density mode: tighter padding, more info on desktop */
 @media (min-width: 1024px) {
   .m-card { padding: 0.75rem 0.875rem; border-radius: 10px; }
   .m-card.dense { padding: 0.5rem 0.75rem; }
@@ -299,4 +354,12 @@ html { scroll-behavior: smooth; scroll-padding-top: 80px; }
   letter-spacing: 0.06em;
   color: var(--color-muted);
   font-family: var(--font-mono);
+}
+
+/* ==== PER-APP EXTRAS BELOW THIS LINE ==== */
+
+/* Dripp Cann brand chip color. Identifies the client brand on tier and
+   attribution chips only; never used as UI chrome. */
+:root {
+  --color-dripp: #b22222;
 }

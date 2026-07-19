@@ -10,15 +10,15 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          'bg-[var(--color-primary)] text-[var(--color-primary-fg)] hover:bg-[#c13030] active:bg-[#9e1e1e]',
+          'bg-[var(--color-primary)] text-[var(--color-primary-fg)] hover:bg-[var(--color-accent)] active:bg-[var(--color-gold-dim)]',
         secondary:
-          'bg-[var(--color-card)] border border-[var(--color-card-border)] text-[var(--color-foreground)] hover:bg-[#1a1f29]',
+          'bg-transparent border border-[rgba(216,173,88,0.22)] text-[var(--color-primary)] hover:bg-[rgba(216,173,88,0.08)]',
         accent:
-          'bg-[var(--color-accent)] text-[#2a1f0f] hover:bg-[#e0b588]',
+          'bg-[var(--color-accent)] text-[var(--color-primary-fg)] hover:bg-[var(--color-cream)]',
         ghost:
-          'text-[var(--color-foreground)] hover:bg-[#1a1f29]',
+          'text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-hover)]',
         destructive:
-          'bg-[var(--color-danger)] text-white hover:bg-[#d63a29]',
+          'bg-[var(--color-danger)] text-white hover:brightness-110',
       },
       size: {
         sm: 'h-9 px-3 text-xs',

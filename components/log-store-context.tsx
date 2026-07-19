@@ -363,7 +363,7 @@ function AccountHeader({ storeNumber }: { storeNumber: number }) {
         {phone && (
           <a
             href={`tel:${phone.replace(/[^0-9+]/g, '')}`}
-            className="shrink-0 change-chip bg-[var(--color-accent)] text-[#2a1f0f] font-semibold min-h-9 px-3 flex items-center"
+            className="shrink-0 change-chip bg-[var(--color-accent)] text-[var(--color-primary-fg)] font-semibold min-h-9 px-3 flex items-center"
           >
             Call
           </a>

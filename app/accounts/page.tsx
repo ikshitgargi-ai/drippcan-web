@@ -72,7 +72,7 @@ export default function AnuAccountsPage() {
         </div>
         <a
           href={api.exportAnuAccountsXlsxUrl(ownerMode ? { owner: true } : undefined)}
-          className="shrink-0 flex items-center gap-2 h-11 px-4 rounded-lg bg-[var(--color-accent)] text-[#2a1f0f] text-sm font-semibold"
+          className="shrink-0 flex items-center gap-2 h-11 px-4 rounded-lg bg-[var(--color-accent)] text-[var(--color-primary-fg)] text-sm font-semibold"
         >
           <Download size={15} /> Excel
         </a>
@@ -185,7 +185,7 @@ function AccountCard({ row }: { row: AnuAccountRow }) {
           </div>
           {row.listings.length > 0 ? (
             <div className="space-y-1">
-              <div className="font-medium text-[var(--color-fg)]">Listings at this store</div>
+              <div className="font-medium text-[var(--color-foreground)]">Listings at this store</div>
               {row.listings.map((l, i) => (
                 <div key={i} className="flex items-center justify-between gap-2">
                   <span>

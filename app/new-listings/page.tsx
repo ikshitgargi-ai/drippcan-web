@@ -96,7 +96,7 @@ export default function NewListingsPage() {
       {/* SOD history coverage banner — tells operator how far back they can
           compare without uploading a historical ZIP. */}
       {coverage.data?.overall_earliest && (
-        <div className="m-card flex items-start gap-3 border-[rgba(120,200,140,0.3)] bg-[rgba(120,200,140,0.04)]">
+        <div className="m-card flex items-start gap-3 border-[rgba(45,212,168,0.3)] bg-[rgba(45,212,168,0.04)]">
           <Calendar size={16} className="text-[var(--color-success)] shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0 text-xs">
             <div className="font-semibold text-[var(--color-foreground)]">
@@ -129,7 +129,7 @@ export default function NewListingsPage() {
               <button
                 key={p.label}
                 onClick={() => applyPreset(p.days)}
-                className="px-3 py-1.5 rounded text-xs border border-[var(--color-card-border)] hover:bg-[var(--color-accent)] hover:text-[#2a1f0f] transition-colors"
+                className="px-3 py-1.5 rounded text-xs border border-[var(--color-card-border)] hover:bg-[var(--color-accent)] hover:text-[var(--color-primary-fg)] transition-colors"
               >
                 Last {p.label}
               </button>
@@ -253,7 +253,7 @@ export default function NewListingsPage() {
                 downloadCSV(rows, `new-listings-${start}-to-${end}`);
               }}
               disabled={!audit.data || audit.isFetching}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-accent)] text-[#2a1f0f] text-sm font-semibold disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-accent)] text-[var(--color-primary-fg)] text-sm font-semibold disabled:opacity-50"
               title="Each row carries verification evidence — confirmed_new, has_change_event, last_listed_before_window, evidence text"
             >
               <Download size={14} /> Download CSV
@@ -413,15 +413,15 @@ export default function NewListingsPage() {
                                   <Link
                                     key={`${s.store_number}-${s.discovered_via}`}
                                     href={`/stores/${s.store_number}`}
-                                    className={`text-xs font-mono px-2 py-1 rounded inline-flex items-center gap-1 hover:bg-[var(--color-accent)] hover:text-[#2a1f0f] ${
+                                    className={`text-xs font-mono px-2 py-1 rounded inline-flex items-center gap-1 hover:bg-[var(--color-accent)] hover:text-[var(--color-primary-fg)] ${
                                       !s.confirmed_new
                                         ? 'bg-[rgba(255,255,255,0.03)] text-muted line-through opacity-60'
                                         : s.discovered_via === 'lcbo_only'
-                                          ? 'bg-[rgba(239,75,75,0.12)] text-[var(--color-danger)]'
+                                          ? 'bg-[rgba(229,72,77,0.12)] text-[var(--color-danger)]'
                                           : s.discovered_via === 'rep_only'
-                                            ? 'bg-[rgba(120,200,140,0.12)] text-[var(--color-success)]'
+                                            ? 'bg-[rgba(45,212,168,0.12)] text-[var(--color-success)]'
                                             : s.has_change_event
-                                              ? 'bg-[rgba(120,200,140,0.10)] text-[var(--color-success)]'
+                                              ? 'bg-[rgba(45,212,168,0.10)] text-[var(--color-success)]'
                                               : 'bg-[rgba(255,255,255,0.05)]'
                                     }`}
                                     title={s.evidence ?? `Discovered via: ${s.discovered_via}`}
@@ -444,7 +444,7 @@ export default function NewListingsPage() {
                                       <Link
                                         key={sn}
                                         href={`/stores/${sn}`}
-                                        className="text-xs font-mono px-2 py-1 rounded bg-[rgba(253,203,110,0.12)] text-[var(--color-warning)] hover:bg-[var(--color-warning)] hover:text-[#2a1f0f]"
+                                        className="text-xs font-mono px-2 py-1 rounded bg-[rgba(253,203,110,0.12)] text-[var(--color-warning)] hover:bg-[var(--color-warning)] hover:text-[var(--color-primary-fg)]"
                                       >
                                         #{sn}
                                       </Link>
@@ -472,7 +472,7 @@ export default function NewListingsPage() {
 
       {/* How-to-read */}
       {audit.data?.how_to_read && (
-        <div className="m-card flex items-start gap-3 border-[rgba(212,165,116,0.3)] bg-[rgba(212,165,116,0.06)]">
+        <div className="m-card flex items-start gap-3 border-[rgba(216,173,88,0.3)] bg-[rgba(216,173,88,0.06)]">
           <AlertTriangle size={18} className="text-[var(--color-accent)] shrink-0 mt-0.5" />
           <div className="text-xs text-muted">{audit.data.how_to_read}</div>
         </div>
@@ -481,15 +481,15 @@ export default function NewListingsPage() {
       {/* Legend */}
       <div className="text-xs text-muted flex flex-wrap gap-3">
         <span>
-          <span className="inline-block w-3 h-3 rounded bg-[rgba(120,200,140,0.10)] align-middle mr-1" />
+          <span className="inline-block w-3 h-3 rounded bg-[rgba(45,212,168,0.10)] align-middle mr-1" />
           ● Confirmed new — change event recorded
         </span>
         <span>
-          <span className="inline-block w-3 h-3 rounded bg-[rgba(239,75,75,0.12)] align-middle mr-1" />
+          <span className="inline-block w-3 h-3 rounded bg-[rgba(229,72,77,0.12)] align-middle mr-1" />
           lcbo.com only (commission claim)
         </span>
         <span>
-          <span className="inline-block w-3 h-3 rounded bg-[rgba(120,200,140,0.12)] align-middle mr-1" />
+          <span className="inline-block w-3 h-3 rounded bg-[rgba(45,212,168,0.12)] align-middle mr-1" />
           Rep observation only
         </span>
         <span>

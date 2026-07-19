@@ -208,8 +208,8 @@ export default function BrandDetailPage({
                       <span
                         className="change-chip text-[10px]"
                         style={{
-                          background: (m.territory_color ?? '#888') + '33',
-                          color: m.territory_color ?? '#888',
+                          background: (m.territory_color ?? '#9fa8bb') + '33',
+                          color: m.territory_color ?? '#9fa8bb',
                         }}
                       >
                         {m.territory_name ?? 'Unassigned'}
@@ -229,10 +229,10 @@ export default function BrandDetailPage({
                             style={
                               r
                                 ? r.status === 'L'
-                                  ? { background: 'rgba(18,194,140,0.15)', color: '#22d79b' }
+                                  ? { background: 'rgba(45,212,168,0.15)', color: '#4be0bb' }
                                   : r.status === 'D'
                                     ? { background: 'rgba(253,203,110,0.15)', color: '#ffd780' }
-                                    : { background: 'rgba(239,75,75,0.15)', color: '#ff8a80' }
+                                    : { background: 'rgba(229,72,77,0.15)', color: '#ff8a80' }
                                 : { background: 'rgba(255,255,255,0.04)', color: 'var(--color-muted)' }
                             }
                           >

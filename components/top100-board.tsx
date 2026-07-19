@@ -260,7 +260,7 @@ export function Top100Board({ owner = false }: { owner?: boolean }) {
               aria-pressed={gapOnly}
               className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-xs font-semibold border ${
                 gapOnly
-                  ? 'bg-[var(--color-accent)] text-[#2a1f0f] border-[var(--color-accent)]'
+                  ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)] border-[var(--color-accent)]'
                   : 'bg-[var(--color-card)] border-[var(--color-card-border)]'
               }`}
               title="Show only stores carrying 0 or 1 of the 2 SKUs"
@@ -281,7 +281,7 @@ export function Top100Board({ owner = false }: { owner?: boolean }) {
                 }
               }}
               disabled={rebalance.isPending}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[#1a1f29] disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[var(--color-hover)] disabled:opacity-50"
             >
               <RefreshCw size={14} className={rebalance.isPending ? 'animate-spin' : ''} />
               {rebalance.isPending ? 'Rebalancing…' : 'Rebalance'}
@@ -289,7 +289,7 @@ export function Top100Board({ owner = false }: { owner?: boolean }) {
           )}
           <a
             href={api.exportTop100XlsxUrl(viewOpts)}
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[#1a1f29]"
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[var(--color-hover)]"
           >
             <Download size={14} />
             Download .xlsx
@@ -297,7 +297,7 @@ export function Top100Board({ owner = false }: { owner?: boolean }) {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={importXlsx.isPending}
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[#1a1f29] disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[var(--color-hover)] disabled:opacity-50"
             title="Re-import the downloaded top100.xlsx after editing priority_rank (and owner_status)"
           >
             <Upload size={14} className={importXlsx.isPending ? 'animate-pulse' : ''} />
@@ -429,7 +429,7 @@ function GeoChip({ row }: { row: Top100Row }) {
   return tier === 'core' ? (
     <span
       className="change-chip"
-      style={{ background: 'rgba(212,165,116,0.15)', color: '#e5c09a' }}
+      style={{ background: 'rgba(216,173,88,0.15)', color: '#e8c98d' }}
       title="Core corridor: Toronto / North York / Vaughan / Markham / Richmond Hill…"
     >
       CORE
@@ -437,7 +437,7 @@ function GeoChip({ row }: { row: Top100Row }) {
   ) : (
     <span
       className="change-chip"
-      style={{ background: 'rgba(255,255,255,0.06)', color: '#a7aeb9' }}
+      style={{ background: 'rgba(255,255,255,0.06)', color: '#9fa8bb' }}
       title="Outer GTA: Mississauga, Brampton and beyond"
     >
       OUTER
@@ -600,7 +600,7 @@ function BoardRow({
                   setNoteOpen(false);
                 }}
                 disabled={busy}
-                className="!min-h-0 h-9 px-3 rounded-lg bg-[var(--color-accent)] text-[#2a1f0f] text-xs font-semibold disabled:opacity-50"
+                className="!min-h-0 h-9 px-3 rounded-lg bg-[var(--color-accent)] text-[var(--color-primary-fg)] text-xs font-semibold disabled:opacity-50"
               >
                 Save
               </button>

@@ -71,7 +71,7 @@ export default function ListingsPage() {
         </div>
         <a
           href={api.exportListingsXlsxUrl(viewOpts)}
-          className="shrink-0 inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[#1a1f29]"
+          className="shrink-0 inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-[var(--color-card)] border border-[var(--color-card-border)] text-xs font-semibold hover:bg-[var(--color-hover)]"
         >
           <Download size={14} />
           .xlsx
@@ -546,7 +546,7 @@ function FilterPill({
       onClick={onClick}
       className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
         active
-          ? 'bg-[var(--color-accent)] text-[#2a1f0f] border-[var(--color-accent)]'
+          ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)] border-[var(--color-accent)]'
           : 'bg-[var(--color-card)] border-[var(--color-card-border)]'
       }`}
     >
@@ -596,15 +596,15 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 const SOURCE_META: Record<ListingSource, { label: string; bg: string; fg: string; unit: string }> = {
-  sod: { label: 'SOD', bg: 'rgba(212,165,116,0.15)', fg: '#e5c09a', unit: 'events' },
-  live: { label: 'Live', bg: 'rgba(96,165,250,0.15)', fg: '#93c5fd', unit: 'events' },
-  rep: { label: 'Rep', bg: 'rgba(18,194,140,0.15)', fg: '#22d79b', unit: 'logs' },
-  manual: { label: 'Manual', bg: 'rgba(167,139,250,0.15)', fg: '#c4b5fd', unit: 'entries' },
+  sod: { label: 'SOD', bg: 'rgba(216,173,88,0.15)', fg: '#e8c98d', unit: 'events' },
+  live: { label: 'Live', bg: 'rgba(109,167,255,0.15)', fg: '#6da7ff', unit: 'events' },
+  rep: { label: 'Rep', bg: 'rgba(45,212,168,0.15)', fg: '#4be0bb', unit: 'logs' },
+  manual: { label: 'Manual', bg: 'rgba(64,142,255,0.15)', fg: '#408eff', unit: 'entries' },
 };
 
 function sourceMeta(source: string) {
   const key = String(source).trim().toLowerCase() as ListingSource;
-  return SOURCE_META[key] ?? { label: source, bg: 'rgba(255,255,255,0.06)', fg: '#a7aeb9', unit: 'events' };
+  return SOURCE_META[key] ?? { label: source, bg: 'rgba(255,255,255,0.06)', fg: '#9fa8bb', unit: 'events' };
 }
 
 function SourceBadge({ source }: { source: string }) {

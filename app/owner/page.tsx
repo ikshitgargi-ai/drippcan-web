@@ -40,7 +40,7 @@ export default function OwnerPage() {
           Owner Dashboard
         </h1>
         <p className="text-sm text-muted">
-          Dripp Cann Spirits — Phoenix &amp; Dayaa at LCBO.
+          Dripp Cann Spirits. Phoenix &amp; Dayaa at LCBO.
         </p>
       </header>
       <OwnerGate>
@@ -164,7 +164,7 @@ function TrendSection() {
                 onClick={() => setSku(s.sku)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
                   sku === s.sku
-                    ? 'bg-[var(--color-accent)] text-[#2a1f0f] border-[var(--color-accent)]'
+                    ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)] border-[var(--color-accent)]'
                     : 'bg-[var(--color-card)] border-[var(--color-card-border)]'
                 }`}
               >
@@ -216,7 +216,7 @@ function OosSection() {
             onClick={() => setThreshold(t)}
             className={`change-chip min-h-8 px-3 tabular-nums ${
               threshold === t
-                ? 'bg-[var(--color-accent)] text-[#2a1f0f] font-semibold'
+                ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)] font-semibold'
                 : 'bg-[var(--color-card)] border border-[var(--color-card-border)]'
             }`}
           >
@@ -299,7 +299,7 @@ function NewListingsSection() {
               onClick={() => setDays(d)}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
                 days === d
-                  ? 'bg-[var(--color-accent)] text-[#2a1f0f] border-[var(--color-accent)]'
+                  ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)] border-[var(--color-accent)]'
                   : 'bg-[var(--color-card)] border-[var(--color-card-border)]'
               }`}
             >
@@ -383,7 +383,7 @@ function ConversionSection() {
                 onClick={() => setDays(d)}
                 className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
                   days === d
-                    ? 'bg-[var(--color-accent)] text-[#2a1f0f] border-[var(--color-accent)]'
+                    ? 'bg-[var(--color-accent)] text-[var(--color-primary-fg)] border-[var(--color-accent)]'
                     : 'bg-[var(--color-card)] border-[var(--color-card-border)]'
                 }`}
               >
@@ -414,7 +414,7 @@ function ConversionSection() {
             </div>
             <div className="flex items-center gap-3 text-xs">
               <span className="flex items-center gap-1.5">
-                <span className="inline-block w-2.5 h-2.5 rounded-sm bg-[rgba(18,194,140,0.6)]" />
+                <span className="inline-block w-2.5 h-2.5 rounded-sm bg-[rgba(45,212,168,0.6)]" />
                 Rep converted{' '}
                 <span className="font-semibold tabular-nums">{formatNumber(c.rep_converted)}</span>
               </span>

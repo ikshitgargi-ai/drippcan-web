@@ -4,10 +4,11 @@
 // On upgrade: bump VERSION to invalidate ALL old caches and force fresh HTML.
 
 // v2: owner-view requests bypass the cache entirely (cross-view isolation).
-const VERSION = 'dripp-tracker-v2';
+// v3: navy+gold house theme, new icon set.
+const VERSION = 'dripp-tracker-v3';
 
 self.addEventListener('install', (e) => {
-  // Take over immediately — don't wait for old tabs to close
+  // Take over immediately, don't wait for old tabs to close
   self.skipWaiting();
 });
 
@@ -33,11 +34,11 @@ self.addEventListener('fetch', (e) => {
 
   // Owner-view requests are NETWORK-ONLY. The Cache API matches by URL and
   // ignores request headers, so a cached internal (non-anonymized) response
-  // could otherwise be served to an X-View: owner request at the same URL —
+  // could otherwise be served to an X-View: owner request at the same URL,
   // and an owner response must never be cached for internal use either.
   if (req.headers.get('X-View') === 'owner' || url.searchParams.get('view') === 'owner') return;
 
-  // Same-origin API GETs only — never intercept cross-origin (e.g. Render
+  // Same-origin API GETs only, never intercept cross-origin (e.g. Render
   // backend at drippcan-tracker.onrender.com). Cross-origin fetches must hit
   // the network so the frontend's real fetch error handling fires;
   // intercepting them and returning a fake JSON 503 caused pages to render
@@ -58,7 +59,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Page navigations: NETWORK-FIRST (was cache-first — that's what kept users
+  // Page navigations: NETWORK-FIRST (was cache-first, that's what kept users
   // on stale builds). On network failure, fall back to cache.
   if (req.mode === 'navigate') {
     e.respondWith(

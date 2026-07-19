@@ -4,17 +4,20 @@ import type { ConversionTag, OwnerStatus, ReconcileFlag } from '@/lib/api';
 
 /**
  * Small shared chips for the Dripp territory / reconcile / top-100 surfaces.
- * Style vocabulary matches globals.css (.change-chip variants).
+ * Style vocabulary matches globals.css (.change-chip variants). Colors come
+ * from the house tint recipe: emerald = good, warning = caution, danger = bad,
+ * gold = house accent, neutral = muted. If a chip ever needs to identify the
+ * Dripp brand itself, use var(--color-dripp); it is never UI chrome.
  */
 
 export function TierChip({ tier }: { tier: string | null | undefined }) {
   if (!tier) return null;
   const styles: Record<string, { bg: string; fg: string; label: string }> = {
-    routed: { bg: 'rgba(212,165,116,0.15)', fg: '#e5c09a', label: 'Routed' },
-    territory: { bg: 'rgba(255,255,255,0.06)', fg: '#a7aeb9', label: 'Territory' },
-    discovered: { bg: 'rgba(18,194,140,0.15)', fg: '#22d79b', label: 'Discovered' },
+    routed: { bg: 'rgba(216,173,88,0.15)', fg: '#e8c98d', label: 'Routed' },
+    territory: { bg: 'rgba(255,255,255,0.06)', fg: '#9fa8bb', label: 'Territory' },
+    discovered: { bg: 'rgba(45,212,168,0.15)', fg: '#4be0bb', label: 'Discovered' },
   };
-  const s = styles[tier] ?? { bg: 'rgba(255,255,255,0.06)', fg: '#a7aeb9', label: tier };
+  const s = styles[tier] ?? { bg: 'rgba(255,255,255,0.06)', fg: '#9fa8bb', label: tier };
   return (
     <span className="change-chip" style={{ background: s.bg, color: s.fg }}>
       {s.label}
@@ -28,8 +31,8 @@ export const FLAG_META: Record<
 > = {
   MATCH: {
     label: 'Match',
-    bg: 'rgba(18,194,140,0.15)',
-    fg: '#22d79b',
+    bg: 'rgba(45,212,168,0.15)',
+    fg: '#4be0bb',
     explain: 'All sources agree',
   },
   SOD_LAGS_LIVE: {
@@ -46,13 +49,13 @@ export const FLAG_META: Record<
   },
   REP_MISMATCH: {
     label: 'Rep mismatch',
-    bg: 'rgba(239,75,75,0.15)',
+    bg: 'rgba(229,72,77,0.15)',
     fg: '#ff8a80',
     explain: 'Rep-observed count differs by 3+ units',
   },
   MISSING_FROM_SOD: {
     label: 'Missing from SOD',
-    bg: 'rgba(239,75,75,0.15)',
+    bg: 'rgba(229,72,77,0.15)',
     fg: '#ff8a80',
     explain: 'On lcbo.com or rep-observed but absent from SOD',
   },
@@ -82,7 +85,7 @@ export function AttributionChip({ tag }: { tag: ConversionTag | null | undefined
     return (
       <span
         className="change-chip"
-        style={{ background: 'rgba(18,194,140,0.15)', color: '#22d79b' }}
+        style={{ background: 'rgba(45,212,168,0.15)', color: '#4be0bb' }}
         title="A touchpoint preceded this listing"
       >
         Rep converted
@@ -93,8 +96,8 @@ export function AttributionChip({ tag }: { tag: ConversionTag | null | undefined
     return (
       <span
         className="change-chip"
-        style={{ background: 'rgba(212,165,116,0.12)', color: '#c9a882' }}
-        title="Listed on or before launch — pre-field-work baseline"
+        style={{ background: 'rgba(216,173,88,0.12)', color: '#e8c98d' }}
+        title="Listed on or before launch, the pre-field-work baseline"
       >
         Baseline
       </span>
@@ -103,7 +106,7 @@ export function AttributionChip({ tag }: { tag: ConversionTag | null | undefined
   return (
     <span
       className="change-chip"
-      style={{ background: 'rgba(255,255,255,0.06)', color: '#a7aeb9' }}
+      style={{ background: 'rgba(255,255,255,0.06)', color: '#9fa8bb' }}
       title="No touchpoint before this listing"
     >
       Organic
@@ -112,10 +115,10 @@ export function AttributionChip({ tag }: { tag: ConversionTag | null | undefined
 }
 
 export const OWNER_STATUS_META: Record<OwnerStatus, { label: string; bg: string; fg: string }> = {
-  none: { label: 'No status', bg: 'rgba(255,255,255,0.06)', fg: '#8b929e' },
-  listing_received: { label: 'Listing received', bg: 'rgba(212,165,116,0.15)', fg: '#e5c09a' },
+  none: { label: 'No status', bg: 'rgba(255,255,255,0.06)', fg: '#9fa8bb' },
+  listing_received: { label: 'Listing received', bg: 'rgba(216,173,88,0.15)', fg: '#e8c98d' },
   order_received: { label: 'Order received', bg: 'rgba(253,203,110,0.15)', fg: '#ffd780' },
-  completed: { label: 'Completed', bg: 'rgba(18,194,140,0.15)', fg: '#22d79b' },
+  completed: { label: 'Completed', bg: 'rgba(45,212,168,0.15)', fg: '#4be0bb' },
 };
 
 export function OwnerStatusChip({ status }: { status: OwnerStatus | string | null | undefined }) {
